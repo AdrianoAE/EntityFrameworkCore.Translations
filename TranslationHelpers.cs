@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.Collections;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {

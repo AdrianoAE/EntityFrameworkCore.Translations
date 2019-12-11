@@ -8,18 +8,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         private static string _suffix = "Translations";
         private static DeleteBehavior _deleteBehavior = DeleteBehavior.Cascade;
 
-        public static string Prefix { get; private set; }
-        public static string Suffix { get; private set; }
-        public static DeleteBehavior DeleteBehavior { get; private set; }
+        public static string Prefix { get; private set; } = _prefix;
+        public static string Suffix { get; private set; } = _suffix;
+        public static DeleteBehavior DeleteBehavior { get; private set; } = _deleteBehavior;
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        static TranslationConfiguration()
-        {
-            SetPrefix(_prefix);
-            SetSuffix(_suffix);
-            SetDeleteBehavior(_deleteBehavior);
-        }
+        public static LanguageTableConfiguration LanguageTableConfiguration { get; internal set; }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
