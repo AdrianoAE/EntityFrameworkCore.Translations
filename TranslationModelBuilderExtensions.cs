@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.ShadowLanguageTable;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -57,7 +58,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
             {
                 languageBuilder = null;
 
-                var propertiesToIgnore = new Dictionary<string, string>();
+                var propertiesToIgnore = new List<string>();
                 var propertiesWithTranslation = entity.GetProperties().Where(p => p.Name.Length > TranslationConfiguration.Prefix.Length
                     && p.Name.Substring(0, TranslationConfiguration.Prefix.Length).Contains(TranslationConfiguration.Prefix));
 
@@ -76,14 +77,14 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
                         foreach (var property in propertiesWithTranslation)
                         {
-                            propertiesToIgnore.Add(entity.Name, property.Name);
+                            propertiesToIgnore.Add(property.Name);
                             translationConfiguration.ConfigureProperty(property);
                         }
                     });
 
                     foreach (var property in propertiesToIgnore)
                     {
-                        modelBuilder.Entity(entity.Name).Ignore(property.Value);
+                        modelBuilder.Entity(entity.Name).Ignore(property);
                     }
                 }
             }
@@ -103,7 +104,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         private static string GetSchemaName(this IMutableEntityType entity)
             => entity.FindAnnotation($"{TranslationConfiguration.Prefix}Schema")?.Value.ToString()
-                ?? TranslationConfiguration.LanguageTableConfiguration.TranslationsSchema
+                ?? TranslationConfiguration.LanguageTableConfiguration?.TranslationsSchema
                 ?? entity.GetSchema();
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■

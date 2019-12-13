@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.ShadowLanguageTable;
+using Microsoft.EntityFrameworkCore;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {
