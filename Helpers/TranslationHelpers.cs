@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AdrianoAE.EntityFrameworkCore.Translations
+namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 {
     internal static class TranslationHelpers
     {
-        public static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string name, object value)
+        internal static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string name, object value)
             where TSource : class
         {
             string annotationName = $"{TranslationConfiguration.Prefix}{name}";
@@ -26,8 +26,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        public static PropertyBuilder<string> ConfigureProperty<TSource>(this EntityTypeBuilder<TSource> builder, IMutableProperty property)
-            where TSource : class
+        internal static PropertyBuilder<string> ConfigureProperty(this EntityTypeBuilder builder, IMutableProperty property)
         {
             var newProperty = builder.Property<string>(property.Name.Replace(TranslationConfiguration.Prefix, "")).Metadata;
 

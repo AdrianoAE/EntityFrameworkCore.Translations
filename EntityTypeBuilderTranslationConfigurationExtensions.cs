@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AdrianoAE.EntityFrameworkCore.Translations
+namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
-    public static class TranslationEntityConfigurationExtensions
+    public static class EntityTypeBuilderTranslationConfigurationExtensions
     {
         public static EntityTypeBuilder<TSource> ToTranslationTable<TSource>(this EntityTypeBuilder<TSource> builder, string name)
             where TSource : class
