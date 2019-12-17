@@ -119,12 +119,24 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 
         private static void ConfigureKeys(this EntityTypeBuilder builder, IMutableEntityType entity, IMutableEntityType languageBuilder)
         {
-            var entityPrimaryKeys = entity.GetProperties()
-                .Where(property => property.IsPrimaryKey())
-                .Select(property => $"{entity.ClrType.Name}{property.GetColumnName()}");
-
-            var primaryKeys = new List<string>(entityPrimaryKeys);
+            var primaryKeys = new List<string>();
             var deleteBehavior = (DeleteBehavior)(entity.FindAnnotation($"{TranslationConfiguration.Prefix}DeleteBehavior")?.Value ?? TranslationConfiguration.DeleteBehavior);
+           
+            //Source Table
+            foreach (var key in entity.GetProperties().Where(p => p.IsPrimaryKey()))
+            {
+                string name = $"{entity.ClrType.Name}{key.GetColumnName()}";
+
+                primaryKeys.Add(name);
+
+                builder.Property(key.ClrType, name)
+                    .HasColumnType(key.GetColumnType());
+            }
+
+            builder.HasOne(entity.ClrType)
+                .WithMany()
+                .HasForeignKey(primaryKeys.ToArray())
+                .OnDelete(deleteBehavior);
 
             //Language Table
             if (languageBuilder == null)
