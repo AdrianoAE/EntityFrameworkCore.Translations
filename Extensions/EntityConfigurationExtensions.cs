@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
-    public static class EntityTypeBuilderTranslationConfigurationExtensions
+    public static class EntityConfigurationExtensions
     {
         public static EntityTypeBuilder<TSource> ToTranslationTable<TSource>(this EntityTypeBuilder<TSource> builder, string name)
             where TSource : class
@@ -26,7 +26,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             return builder;
         }
 
-        //═════════════════════════════════════════════════════════════════════════════════════════
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
         public static EntityTypeBuilder<TSource> TranslationTableSuffix<TSource>(this EntityTypeBuilder<TSource> builder, string suffix)
             where TSource : class

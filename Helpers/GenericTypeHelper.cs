@@ -22,7 +22,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
             return typeName;
         }
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //─────────────────────────────────────────────────────────────────────────────────────────
 
         internal static string GetGenericTypeName(this object @object)
         {

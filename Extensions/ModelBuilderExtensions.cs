@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {
-    public static class TranslationModelBuilderExtensions
+    public static class ModelBuilderExtensions
     {
         public static ModelBuilder ApplyTranslationsConfigurations(this ModelBuilder modelBuilder, Type type, string foreignKeyName)
             => modelBuilder.ApplyTranslationsConfigurations(new LanguageTableConfiguration(type, foreignKeyName));

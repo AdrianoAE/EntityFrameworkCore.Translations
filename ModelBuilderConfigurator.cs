@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 {
-    internal static class ModelBuilderHelper
+    internal static class ModelBuilderConfigurator
     {
         internal static ModelBuilder Configure(this ModelBuilder modelBuilder, Type languageEntity = null)
         {
@@ -22,7 +22,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
                 return modelBuilder;
             }
 
-            MethodInfo ConfigureEntityMethod = typeof(ModelBuilderHelper)
+            MethodInfo ConfigureEntityMethod = typeof(ModelBuilderConfigurator)
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
                 .Single(t => t.IsGenericMethod && t.Name == nameof(ConfigureEntity));
 
