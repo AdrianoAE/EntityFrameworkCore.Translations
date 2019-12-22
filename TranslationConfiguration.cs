@@ -1,6 +1,5 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.ShadowLanguageTable;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
@@ -13,8 +12,8 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        private static Dictionary<string, Type> _translationEntities;
-        internal static IReadOnlyDictionary<string, Type> TranslationEntities => _translationEntities;
+        private static Dictionary<string, TranslationEntity> _translationEntities;
+        internal static IReadOnlyDictionary<string, TranslationEntity> TranslationEntities => _translationEntities;
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
@@ -22,7 +21,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         public static string Suffix { get; private set; } = _suffix;
         public static DeleteBehavior DeleteBehavior { get; private set; } = _deleteBehavior;
         public static LanguageTableConfiguration LanguageTableConfiguration { get; internal set; }
-        
+
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
         public static void SetPrefix(string prefix)
@@ -46,7 +45,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        internal static void SetTranslationEntities(Dictionary<string, Type> translationEntities)
+        internal static void SetTranslationEntities(Dictionary<string, TranslationEntity> translationEntities)
         {
             _translationEntities = translationEntities;
         }

@@ -1,18 +1,18 @@
 ﻿using System;
 
-namespace AdrianoAE.EntityFrameworkCore.Translations.ShadowLanguageTable
+namespace AdrianoAE.EntityFrameworkCore.Translations.Models
 {
-    public class PrimaryKeyConfiguration
+    public class KeyConfiguration
     {
         public readonly Type Type;
-        public readonly string ForeignKeyName;
+        public readonly string Name;
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        public PrimaryKeyConfiguration(Type type, string foreignKeyName)
+        public KeyConfiguration(Type type, string name)
         {
             Type = type;
-            ForeignKeyName = !string.IsNullOrWhiteSpace(foreignKeyName) ? foreignKeyName : throw new ArgumentNullException(nameof(ForeignKeyName));
+            Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentNullException(nameof(Name));
         }
     }
 }

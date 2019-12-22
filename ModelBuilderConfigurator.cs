@@ -1,4 +1,6 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
+using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
+using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -7,38 +9,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
+namespace AdrianoAE.EntityFrameworkCore.Translations
 {
     internal static class ModelBuilderConfigurator
     {
+        private static MethodInfo configureEntityMethod => typeof(ModelBuilderConfigurator)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .Single(t => t.IsGenericMethod && t.Name == nameof(ConfigureEntity));
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
         internal static ModelBuilder Configure(this ModelBuilder modelBuilder, Type languageEntity = null)
         {
             IMutableEntityType languageBuilder = null;
 
             InitializeTranslationEntities();
 
-            if (TranslationConfiguration.TranslationEntities.Count == 0)
-            {
-                return modelBuilder;
-            }
-
-            MethodInfo ConfigureEntityMethod = typeof(ModelBuilderConfigurator)
-                .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-                .Single(t => t.IsGenericMethod && t.Name == nameof(ConfigureEntity));
-
             foreach (var entity in new List<IMutableEntityType>(modelBuilder.Model.GetEntityTypes()))
             {
-                TranslationConfiguration.TranslationEntities.TryGetValue(entity.ClrType.FullName, out Type translationType);
+                TranslationConfiguration.TranslationEntities.TryGetValue(entity.ClrType.FullName, out TranslationEntity translationEntity);
 
-                if (translationType != null)
+                if (translationEntity != null)
                 {
                     var propertiesWithTranslation = entity.GetProperties()
-                        .Where(property => translationType.GetProperties().Select(p => p.Name).Contains(property.Name))
+                        .Where(property => translationEntity.Type.GetProperties().Select(p => p.Name).Contains(property.Name))
                         .ToList();
 
                     if (propertiesWithTranslation.Count > 0)
                     {
-                        var method = ConfigureEntityMethod.MakeGenericMethod(translationType);
+                        var method = configureEntityMethod.MakeGenericMethod(translationEntity.Type);
 
                         method.Invoke(null, new object[] { modelBuilder, entity, languageEntity, languageBuilder, propertiesWithTranslation });
 
@@ -57,24 +56,21 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 
         private static void InitializeTranslationEntities()
         {
-            if (TranslationConfiguration.TranslationEntities == null)
-            {
-                var translationEntities = AppDomain.CurrentDomain
-                   .GetAssemblies()
-                   .Where(assembly =>
-                   {
-                       var value = assembly.CustomAttributes
-                           .FirstOrDefault(attribute => attribute.AttributeType == typeof(AssemblyProductAttribute))
-                           ?.ConstructorArguments[0].Value as string;
+            var translationEntities = AppDomain.CurrentDomain
+               .GetAssemblies()
+               .Where(assembly =>
+               {
+                   var value = assembly.CustomAttributes
+                       .FirstOrDefault(attribute => attribute.AttributeType == typeof(AssemblyProductAttribute))
+                       ?.ConstructorArguments[0].Value as string;
 
-                       return value != null ? !value.Contains("Microsoft") : false;
-                   })
-                   .SelectMany(assembly => assembly.GetTypes())
-                   .Where(type => type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITranslation<>)))
-                   .ToDictionary(type => type.GetInterface("ITranslation`1").GetGenericArguments()[0].FullName, type => type);
+                   return value != null ? !value.Contains("Microsoft") : false;
+               })
+               .SelectMany(assembly => assembly.GetTypes())
+               .Where(type => type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITranslation<>)))
+               .ToDictionary(type => type.GetInterface("ITranslation`1").GetGenericArguments()[0].FullName, type => new TranslationEntity(type));
 
-                TranslationConfiguration.SetTranslationEntities(translationEntities);
-            }
+            TranslationConfiguration.SetTranslationEntities(translationEntities);
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
@@ -121,16 +117,18 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
         {
             var primaryKeys = new List<string>();
             var deleteBehavior = (DeleteBehavior)(entity.FindAnnotation($"{TranslationConfiguration.Prefix}DeleteBehavior")?.Value ?? TranslationConfiguration.DeleteBehavior);
-           
+            var configuration = TranslationConfiguration.TranslationEntities[entity.ClrType.FullName];
+
             //Source Table
             foreach (var key in entity.GetProperties().Where(p => p.IsPrimaryKey()))
             {
                 string name = $"{entity.ClrType.Name}{key.GetColumnName()}";
 
-                primaryKeys.Add(name);
-
                 builder.Property(key.ClrType, name)
                     .HasColumnType(key.GetColumnType());
+
+                primaryKeys.Add(name);
+                configuration.KeysFromSourceEntity.Add(key.GetColumnName(), name);
             }
 
             builder.HasOne(entity.ClrType)
@@ -141,31 +139,37 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
             //Language Table
             if (languageBuilder == null)
             {
+
                 foreach (var key in TranslationConfiguration.LanguageTableConfiguration.PrimaryKey)
                 {
-                    builder.Property(key.Type, key.ForeignKeyName);
-                    primaryKeys.Add(key.ForeignKeyName);
+                    builder.Property(key.Type, key.Name);
+
+                    primaryKeys.Add(key.Name);
+                    configuration.KeysFromLanguageEntity.Add(new KeyConfiguration(key.Type, key.Name));
                 }
             }
-            else if (languageBuilder != null)
+            else
             {
-                var foreignKeys = new List<string>();
+                var foreignKeys = new List<KeyConfiguration>();
 
                 foreach (var property in languageBuilder.GetProperties().Where(p => p.IsPrimaryKey()))
                 {
                     string name = $"{languageBuilder.ClrType.Name}{property.GetColumnName()}";
 
-                    primaryKeys.Add(name);
-                    foreignKeys.Add(name);
-
                     builder.Property(property.ClrType, name)
                         .HasColumnType(property.GetColumnType());
+
+                    primaryKeys.Add(name);
+                    foreignKeys.Add(new KeyConfiguration(property.ClrType, name));
+                    configuration.KeysFromLanguageEntity.Add(new KeyConfiguration(property.ClrType, name));
                 }
 
                 builder.HasOne(languageBuilder.ClrType)
                     .WithMany()
-                    .HasForeignKey(foreignKeys.ToArray())
+                    .HasForeignKey(foreignKeys.Select(fk => fk.Name).ToArray())
                     .OnDelete(deleteBehavior);
+
+                TranslationConfiguration.LanguageTableConfiguration = new LanguageTableConfiguration(foreignKeys);
             }
 
             builder.HasKey(primaryKeys.ToArray());

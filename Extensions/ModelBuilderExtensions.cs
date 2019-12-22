@@ -1,13 +1,12 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
-using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
-using AdrianoAE.EntityFrameworkCore.Translations.ShadowLanguageTable;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
+using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace AdrianoAE.EntityFrameworkCore.Translations
+namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
     public static class ModelBuilderExtensions
     {
@@ -21,12 +20,12 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public static ModelBuilder ApplyTranslationsConfigurations(this ModelBuilder modelBuilder, IEnumerable<PrimaryKeyConfiguration> primaryKey)
+        public static ModelBuilder ApplyTranslationsConfigurations(this ModelBuilder modelBuilder, IEnumerable<KeyConfiguration> primaryKey)
             => modelBuilder.ApplyTranslationsConfigurations(new LanguageTableConfiguration(primaryKey));
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public static ModelBuilder ApplyTranslationsConfigurations(this ModelBuilder modelBuilder, string schema, IEnumerable<PrimaryKeyConfiguration> primaryKey)
+        public static ModelBuilder ApplyTranslationsConfigurations(this ModelBuilder modelBuilder, string schema, IEnumerable<KeyConfiguration> primaryKey)
             => modelBuilder.ApplyTranslationsConfigurations(new LanguageTableConfiguration(schema, primaryKey));
 
         //─────────────────────────────────────────────────────────────────────────────────────────
