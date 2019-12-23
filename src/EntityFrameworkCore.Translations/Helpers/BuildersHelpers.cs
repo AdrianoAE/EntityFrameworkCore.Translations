@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 {
-    internal static class TranslationHelpers
+    internal static class BuildersHelpers
     {
         internal static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string name, object value)
             where TSource : class

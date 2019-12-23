@@ -1,15 +1,10 @@
 ﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
-using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {
@@ -18,11 +13,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         internal static IQueryable<TEntity> GetTranslatedQuery<TEntity>(this IQueryable<TEntity> query, object[] desiredParameters, object[] defaultParameters)
             where TEntity : class
         {
-            var context = GetDbContext(query);
+            var context = PersistenceHelpers.GetDbContext(query);
 
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
 
-            ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, desiredParameters, defaultParameters);
+            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, desiredParameters, defaultParameters);
 
             var baseQuery = context.GetType()
                 .GetMethod("Query")
@@ -59,26 +54,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                     (From, Translation) => From.Base.Entity.SetTranslatedProperties(Translation ?? From.Base.Translation));
 
             return wanted;
-        }
-
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        private static void ValidateLanguageKeys(IEnumerable<KeyConfiguration> keys, object[] desiredParameters, object[] defaultParameters)
-        {
-            int parameterPosition = 0;
-            foreach (var property in keys)
-            {
-                if (desiredParameters[parameterPosition].GetType() != defaultParameters[parameterPosition].GetType() ||
-                    property.Type != desiredParameters[parameterPosition].GetType() ||
-                    property.Type != defaultParameters[parameterPosition].GetType())
-                {
-                    throw new ArgumentException($"The following key does not match at index {parameterPosition}:\n" +
-                        $"\tProperty: {property.Name} Type: {property.Type.Name}\n" +
-                        $"\tDesired Type: {desiredParameters[parameterPosition].GetType().Name}\n" +
-                        $"\tDefault Type: {defaultParameters[parameterPosition].GetType().Name}");
-                }
-                parameterPosition++;
-            }
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
@@ -162,24 +137,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                 },
                 _ => throw new NotSupportedException($"{keys.Count()} keys provided. The maximum number of keys supported is 5.")
             };
-
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        private static DbContext GetDbContext(IQueryable query)
-        {
-            var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-            var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
-            var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
-
-            var dependencies = typeof(RelationalQueryContextFactory).GetField("_dependencies", bindingFlags).GetValue(queryContextFactory);
-            var queryContextDependencies = typeof(DbContext).Assembly.GetType(typeof(QueryContextDependencies).FullName);
-            var stateManagerProperty = queryContextDependencies.GetProperty("StateManager", bindingFlags | BindingFlags.Public).GetValue(dependencies);
-            var stateManager = (IStateManager)stateManagerProperty;
-
-#pragma warning disable EF1001 // Internal EF Core API usage.
-            return stateManager.Context;
-#pragma warning restore EF1001 // Internal EF Core API usage.
-        }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 

@@ -49,7 +49,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         public Task<TEntity> FirstAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
             => _query.Where(predicate).GetTranslatedQuery(_desiredParameters, _defaultParameters).FirstAsync(cancellationToken);
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //═════════════════════════════════════════════════════════════════════════════════════════
 
         public Task<TEntity> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
             => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).FirstOrDefaultAsync(cancellationToken);
@@ -59,7 +59,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         public Task<TEntity> FirstOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
             => _query.Where(predicate).GetTranslatedQuery(_desiredParameters, _defaultParameters).FirstOrDefaultAsync(cancellationToken);
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //═════════════════════════════════════════════════════════════════════════════════════════
 
         public Task<TEntity> SingleAsync(CancellationToken cancellationToken = default)
             => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleAsync(cancellationToken);
@@ -69,7 +69,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         public Task<TEntity> SingleAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
             => _query.Where(predicate).GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleAsync(cancellationToken);
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //═════════════════════════════════════════════════════════════════════════════════════════
 
         public Task<TEntity> SingleOrDefaultAsync(CancellationToken cancellationToken = default)
             => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleOrDefaultAsync(cancellationToken);
@@ -79,12 +79,12 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         public Task<TEntity> SingleOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
             => _query.Where(predicate).GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleOrDefaultAsync(cancellationToken);
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //═════════════════════════════════════════════════════════════════════════════════════════
 
         public Task<TEntity[]> ToArrayAsync(CancellationToken cancellationToken = default)
             => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToArrayAsync(cancellationToken);
 
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        //═════════════════════════════════════════════════════════════════════════════════════════
 
         public Task<Dictionary<TKey, TEntity>> ToDictionaryAsync<TKey>([NotNull] Func<TEntity, TKey> keySelector, CancellationToken cancellationToken = default)
             => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToDictionaryAsync(keySelector, cancellationToken);
