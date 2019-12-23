@@ -8,7 +8,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Models
         internal Type Type { get; private set; }
         internal ICollection<KeyConfiguration> KeysFromLanguageEntity { get; private set; }
         internal IDictionary<string, string> KeysFromSourceEntity { get; private set; }
-        internal bool IsConfigured { get; private set; }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
@@ -18,10 +17,5 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Models
             KeysFromLanguageEntity = new List<KeyConfiguration>();
             KeysFromSourceEntity = new Dictionary<string, string>();
         }
-
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        internal void Configured()
-            => IsConfigured = true;
     }
 }
