@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions

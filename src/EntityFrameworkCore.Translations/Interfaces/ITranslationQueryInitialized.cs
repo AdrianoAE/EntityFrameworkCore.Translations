@@ -1,6 +1,4 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
-
-namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
+﻿namespace AdrianoAE.EntityFrameworkCore.Translations.Interfaces
 {
     public interface ITranslationQueryInitialized<TEntity>
         where TEntity : class

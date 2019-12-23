@@ -1,5 +1,4 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.Extensions;
-using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
