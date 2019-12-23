@@ -11,7 +11,7 @@
     <Company>AdrianoAE</Company>
     <Product>AdrianoAE</Product>
     <PackageProjectUrl>https://github.com/AdrianoAE/EntityFrameworkCore.Translations</PackageProjectUrl>
-    <PackageLicenseExpression><license type="file">LICENSE.txt</license></PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
