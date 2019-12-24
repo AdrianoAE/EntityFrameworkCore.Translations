@@ -12,12 +12,21 @@
     <Product>AdrianoAE</Product>
     <PackageProjectUrl>https://github.com/AdrianoAE/EntityFrameworkCore.Translations</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageIcon>Subtração 2.png</PackageIcon>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageIconUrl />
+    <Description>Extensions to improve how we localize our domain models with EFCore</Description>
+    <Copyright />
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 </Project>

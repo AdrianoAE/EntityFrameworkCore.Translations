@@ -10,9 +10,15 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 {
     internal static class TranslatedIQueryableBuilder
     {
-        internal static IQueryable<TEntity> GetTranslatedQuery<TEntity>(this IQueryable<TEntity> query, object[] desiredParameters, object[] defaultParameters)
+        internal static IQueryable<TEntity> GetTranslatedQuery<TEntity>(this IQueryable<TEntity> query, object[] desiredParameters, object[] defaultParameters,
+            Expression<Func<TEntity, bool>> predicate = null)
             where TEntity : class
         {
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
             var context = PersistenceHelpers.GetDbContext(query);
 
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
