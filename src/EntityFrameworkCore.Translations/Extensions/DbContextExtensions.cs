@@ -13,9 +13,14 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
     {
         public static async Task<int> SaveChangesWithTranslations([NotNull] this DbContext context, params object[] _languageKey)
         {
+            var addedEntries = context.ChangeTracker.Entries()
+                .Where(entry => entry.State == EntityState.Added
+                    && TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
+                .ToList();
+
             var result = await context.SaveChangesAsync();
 
-            foreach (var entry in new List<EntityEntry>(context.ChangeTracker.Entries().Where(entry => TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))))
+            foreach (var entry in addedEntries)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
 
