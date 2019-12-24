@@ -9,4 +9,4 @@ The purpose of this project is to improve the way we deal with domain translatio
 
 The project is in development and have a lot of problems that need to be solved.
 
-//A sample will be released soon.
+//A simple sample will be released soon. And then will work on showing all other configurations that can be done at the current stage of the project.
