@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\EntityFrameworkCore.Translations\AdrianoAE.EntityFrameworkCore.Translations.csproj" />
+    <ProjectReference Include="..\..\src\EntityFrameworkCore.Translations\AdrianoAE.EntityFrameworkCore.Translations.csproj" />
   </ItemGroup>
 
 </Project>
