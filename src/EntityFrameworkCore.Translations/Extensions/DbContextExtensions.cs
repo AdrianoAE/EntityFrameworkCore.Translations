@@ -9,7 +9,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
     public static class DbContextExtensions
     {
-        public static async Task<int> SaveChangesWithTranslations([NotNull] this DbContext context, params object[] _languageKey)
+        public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, params object[] _languageKey)
         {
             int parameterPosition = 0;
 
