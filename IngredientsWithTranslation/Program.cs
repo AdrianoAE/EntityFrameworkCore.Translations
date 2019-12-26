@@ -40,7 +40,8 @@ namespace IngredientsWithTranslation
             public DbSet<IngredientTranslation> IngredientsTranslations { get; set; }
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-                => optionsBuilder.EnableSensitiveDataLogging().UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=Test;ConnectRetryCount=0");
+                => optionsBuilder
+                    .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=Test;ConnectRetryCount=0");
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -63,7 +64,6 @@ namespace IngredientsWithTranslation
         public static async Task Main()
         {
             using var context = new IngredientContext();
-
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
 
@@ -87,7 +87,7 @@ namespace IngredientsWithTranslation
 
             var noodle = new Ingredient("Noodle");
             await context.Ingredients.AddAsync(noodle);
-            await context.SaveChangesWithTranslations(ENGLISH);
+            await context.SaveChangesWithTranslationsAsync(ENGLISH);
 
             var noodleResult = await context.Ingredients
                 .WithLanguage(ENGLISH)
@@ -110,7 +110,7 @@ namespace IngredientsWithTranslation
 
             rice.SetName("Bowl of Rice");
             context.Update(rice); //This is required because EFCore can't track the translated properties
-            await context.SaveChangesWithTranslations(ENGLISH);
+            await context.SaveChangesWithTranslationsAsync(ENGLISH);
 
             var riceQuery = await context.Ingredients
                 .WithLanguage(ENGLISH)
@@ -120,7 +120,7 @@ namespace IngredientsWithTranslation
             Console.WriteLine($"\tModified\tId: {riceQuery.Id}\tName: {riceQuery.Name}");
             #endregion
 
-            //TODO: Allow to add/update translations to other languages
+            //TODO: Allow to add/update translations
 
             context.Database.EnsureDeleted();
         }
