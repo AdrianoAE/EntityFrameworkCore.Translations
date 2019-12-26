@@ -9,7 +9,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
     public static class DbContextExtensions
     {
-        public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, params object[] _languageKey)
+        public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, params object[] languageKey)
         {
             int parameterPosition = 0;
 
@@ -29,7 +29,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
 
-                PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, _languageKey);
+                PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, languageKey);
 
                 var translation = Activator.CreateInstance(translationEntity.Type);
 
@@ -41,7 +41,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 parameterPosition = 0;
                 foreach (var property in translationEntity.KeysFromLanguageEntity)
                 {
-                    context.Entry(translation).Property(property.Name).CurrentValue = _languageKey[parameterPosition];
+                    context.Entry(translation).Property(property.Name).CurrentValue = languageKey[parameterPosition];
                     parameterPosition++;
                 }
 
@@ -57,7 +57,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
 
-                PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, _languageKey);
+                PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, languageKey);
 
                 var translatedEntry = context.ChangeTracker.Entries().Where(e =>
                 {
@@ -69,7 +69,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     parameterPosition = 0;
                     foreach (var property in translationEntity.KeysFromLanguageEntity)
                     {
-                        if (!e.Property(property.Name).CurrentValue.Equals(_languageKey[parameterPosition]))
+                        if (!e.Property(property.Name).CurrentValue.Equals(languageKey[parameterPosition]))
                         {
                             return false;
                         }
@@ -88,7 +88,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
                 if (translatedEntry == null)
                 {
-                    throw new ArgumentNullException($"Could not find the translated entry for the entry {entry.Entity.GetType().Name}");
+                    throw new ArgumentNullException($"Could not find the translated entry for the {entry.Entity.GetType().Name} entry");
                 }
 
                 foreach (var property in entry.Entity.GetType().GetProperties())

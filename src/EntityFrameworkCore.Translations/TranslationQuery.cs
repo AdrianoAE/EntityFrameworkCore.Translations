@@ -19,16 +19,16 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        private TranslationQuery(IQueryable<TEntity> query, params object[] parameters)
+        private TranslationQuery(IQueryable<TEntity> query, params object[] languageKey)
         {
             _query = query;
-            _desiredParameters = parameters;
+            _desiredParameters = languageKey;
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        internal static ITranslationQueryInitialized<TEntity> Initialize(IQueryable<TEntity> query, params object[] parameters)
-            => new TranslationQuery<TEntity>(query, parameters);
+        internal static ITranslationQueryInitialized<TEntity> Initialize(IQueryable<TEntity> query, params object[] languageKey)
+            => new TranslationQuery<TEntity>(query, languageKey);
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 

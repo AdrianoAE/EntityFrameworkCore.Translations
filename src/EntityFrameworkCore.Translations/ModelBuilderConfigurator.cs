@@ -93,9 +93,16 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         private static void ConfigureEntity<TType>(ModelBuilder modelBuilder, IMutableEntityType entity, Type languageEntity, IMutableEntityType languageBuilder, List<IMutableProperty> propertiesWithTranslation)
             where TType : class
         {
+            var table = entity.GetTranslationTableName();
+            var schema = entity.GetSchemaName();
+            var configuration = TranslationConfiguration.TranslationEntities[entity.ClrType.FullName];
+
+            configuration.Schema = schema;
+            configuration.TableName = table;
+
             modelBuilder.Entity<TType>(translationConfiguration =>
             {
-                translationConfiguration.ToTable(entity.GetTranslationTableName(), entity.GetSchemaName());
+                translationConfiguration.ToTable(table, schema);
 
                 if (languageEntity != null)
                 {

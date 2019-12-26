@@ -10,20 +10,14 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 {
     internal static class TranslatedIQueryableBuilder
     {
-        internal static IQueryable<TEntity> GetTranslatedQuery<TEntity>(this IQueryable<TEntity> query, object[] desiredParameters, object[] defaultParameters,
+        internal static IQueryable<TEntity> GetTranslatedQuery<TEntity>(this IQueryable<TEntity> query, object[] desiredLanguageKey, object[] defaultLanguageKey,
             Expression<Func<TEntity, bool>> predicate = null)
             where TEntity : class
         {
-            if (predicate != null)
-            {
-                query = query.Where(predicate);
-            }
-
             var context = PersistenceHelpers.GetDbContext(query);
-
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
 
-            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, desiredParameters, defaultParameters);
+            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, desiredLanguageKey, defaultLanguageKey);
 
             var baseQuery = context.GetType()
                 .GetMethod("Query")
@@ -35,13 +29,18 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
             int parameterPosition = 0;
             foreach (var property in translationEntity.KeysFromLanguageEntity)
             {
-                defaultTranslationQuery = defaultTranslationQuery.Where(BuildPredicate(property.Name, defaultParameters[parameterPosition]));
-                desiredTranslationQuery = desiredTranslationQuery.Where(BuildPredicate(property.Name, desiredParameters[parameterPosition]));
+                defaultTranslationQuery = defaultTranslationQuery.Where(BuildPredicate(property.Name, defaultLanguageKey[parameterPosition]));
+                desiredTranslationQuery = desiredTranslationQuery.Where(BuildPredicate(property.Name, desiredLanguageKey[parameterPosition]));
                 parameterPosition++;
             }
 
             var sourceKeys = translationEntity.KeysFromSourceEntity.Select(key => key.Key);
             var relationshipKeys = translationEntity.KeysFromSourceEntity.Select(key => key.Value);
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
 
             var wanted = query
                 //Fallback

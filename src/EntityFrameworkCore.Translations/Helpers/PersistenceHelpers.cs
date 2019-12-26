@@ -33,17 +33,27 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
         //═════════════════════════════════════════════════════════════════════════════════════════
 
         internal static void ValidateLanguageKeys(IEnumerable<KeyConfiguration> keys, object[] parameters)
+            => ValidateLanguageKeys(keys, new List<object[]> { parameters });
+
+        //═════════════════════════════════════════════════════════════════════════════════════════
+
+        internal static void ValidateLanguageKeys(IEnumerable<KeyConfiguration> keys, IEnumerable<object[]> listOfParameters)
         {
-            int parameterPosition = 0;
-            foreach (var property in keys)
+            int parameterPosition;
+
+            foreach (var parameters in listOfParameters)
             {
-                if (property.Type != parameters[parameterPosition].GetType())
+                parameterPosition = 0;
+                foreach (var property in keys)
                 {
-                    throw new ArgumentException($"The following key does not match at index {parameterPosition}:\n" +
-                        $"\tProperty: {property.Name} Type: {property.Type.Name}\n" +
-                        $"\tDesired Type: {parameters[parameterPosition].GetType().Name}");
+                    if (property.Type != parameters[parameterPosition].GetType())
+                    {
+                        throw new ArgumentException($"The following key does not match at index {parameterPosition}:\n" +
+                            $"\tProperty: {property.Name} Type: {property.Type.Name}\n" +
+                            $"\tDesired Type: {parameters[parameterPosition].GetType().Name}");
+                    }
+                    parameterPosition++;
                 }
-                parameterPosition++;
             }
         }
 

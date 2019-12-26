@@ -6,6 +6,8 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Models
     internal class TranslationEntity
     {
         internal Type Type { get; private set; }
+        internal string Schema { get; set; };
+        internal string TableName { get; set; }
         internal ICollection<KeyConfiguration> KeysFromLanguageEntity { get; private set; }
         internal IDictionary<string, string> KeysFromSourceEntity { get; private set; }
 
