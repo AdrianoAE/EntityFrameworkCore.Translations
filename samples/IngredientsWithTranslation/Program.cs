@@ -3,6 +3,7 @@ using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
 using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace IngredientsWithTranslation
@@ -45,6 +46,7 @@ namespace IngredientsWithTranslation
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
                 => optionsBuilder
+                    .EnableSensitiveDataLogging()
                     .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=TranslatedIngredientsSampleDB;ConnectRetryCount=0");
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -62,7 +64,7 @@ namespace IngredientsWithTranslation
                     new { IngredientId = 1, LanguageId = English, Name = "Potato" },
                     new { IngredientId = 1, LanguageId = Portuguese, Name = "Batata" },
                     new { IngredientId = 2, LanguageId = English, Name = "Rice" },
-                    new { IngredientId = 3, LanguageId = English, Name = "Apple" },
+                    new { IngredientId = 3, LanguageId = English, Name = "Rotten Apple" },
                     new { IngredientId = 3, LanguageId = Portuguese, Name = "Maça Podre" });
                 #endregion
             }
@@ -76,11 +78,13 @@ namespace IngredientsWithTranslation
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
 
-            Console.WriteLine($"Query:");
+            Console.WriteLine($"(Query) Initial values:");
             await PrintAll(context);
 
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
             #region --- Insert - Intended to be used with the default language
-            Console.WriteLine($"\nInsert:");
+            Console.WriteLine($"Insert:");
 
             var noodle = new Ingredient("Noodle");
             await context.Ingredients.AddAsync(noodle);
@@ -97,8 +101,10 @@ namespace IngredientsWithTranslation
             #endregion
             #endregion
 
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
             #region --- Update - Intended to be used with the default language
-            Console.WriteLine($"\nUpdate:");
+            Console.WriteLine($"Update:");
 
             var rice = await context.Ingredients
                 .WithLanguage(DefaultLanguage)
@@ -122,28 +128,40 @@ namespace IngredientsWithTranslation
             #endregion
             #endregion
 
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
             #region --- Add/Update translations
             var apple = await context.Ingredients
-                .AsNoTracking()
                 .WithLanguage(DefaultLanguage)
                 .WithFallback(DefaultLanguage)
                 .FirstOrDefaultAsync(i => i.Id == 3);
 
-            //Update
-            var applePortuguese = new Ingredient("Maça");
-            context.Ingredients.UpsertTranslation(apple, applePortuguese, Portuguese);
+            #region Console Output
+            Console.WriteLine($"Original translations:");
+            var teste = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
+            foreach (var item in teste)
+            {
+                Console.WriteLine($"\tId: {apple.Id}\tName: {item.Name}");
+            }
+            #endregion
 
-            //Add
+            var appleEnglish = new Ingredient("Apple");
+            var applePortuguese = new Ingredient("Maça");
             var appleGerman = new Ingredient("Apfel");
             var appleFrench = new Ingredient("Pomme");
+
+            //Here to showcase, always use the Range one for multiple
+            context.Ingredients.UpsertTranslation(apple, appleEnglish, English); //Update
+
             context.Ingredients.UpsertTranslationRange(apple,
-                new Translation<Ingredient>(appleGerman, German),
-                new Translation<Ingredient>(appleFrench, French));
+                applePortuguese.TranslationOf(Portuguese),  //Update
+                appleGerman.TranslationOf(German),          //Add
+                appleFrench.TranslationOf(French));         //Add
 
             await context.SaveChangesAsync();
 
             #region Console Output
-            Console.WriteLine($"\nAdd/Update translations:");
+            Console.WriteLine($"\nAdded/Updated translations:");
             var appleEN = await context.Ingredients.AsNoTracking().WithLanguage(English).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
             var applePT = await context.Ingredients.AsNoTracking().WithLanguage(Portuguese).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
             var appleDE = await context.Ingredients.AsNoTracking().WithLanguage(German).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
@@ -156,7 +174,9 @@ namespace IngredientsWithTranslation
             #endregion
             #endregion
 
-            Console.WriteLine($"\nQuery after all modifications:");
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
+            Console.WriteLine($"(Query) Final Values:");
             await PrintAll(context);
 
             context.Database.EnsureDeleted();
@@ -165,7 +185,6 @@ namespace IngredientsWithTranslation
         private static async Task PrintAll(IngredientContext context)
         {
             var ingredients = await context.Ingredients
-                .AsNoTracking()
                 .WithLanguage(Portuguese)
                 .WithFallback(DefaultLanguage)
                 .ToListAsync();
