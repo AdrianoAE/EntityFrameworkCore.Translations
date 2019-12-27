@@ -1,0 +1,14 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.1.0'">
+Enhancements:
+* Support for updating entities with translation
+* Support for adding/updating translations
+    </PackageReleaseNotes>
+    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.0.1'">
+Note:
+* This project is in early development, currently supports the database model generation with and without a Language table,
+querying in the desired language with fallback language, insert and update (both intended to be used in the default language).
+    </PackageReleaseNotes>
+  </PropertyGroup>
+</Project>
