@@ -146,7 +146,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
             //Language Table
             if (languageBuilder == null)
             {
-
                 foreach (var key in TranslationConfiguration.LanguageTableConfiguration.PrimaryKey)
                 {
                     builder.Property(key.Type, key.Name);

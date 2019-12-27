@@ -39,9 +39,10 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             var context = PersistenceHelpers.GetDbContext(source);
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
             var method = configureEntityMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
+            IEnumerable<IDictionary<string, object>> existingTranslations = null;
 
             PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(translation => translation.LanguageKey).ToArray());
-
+            
             foreach (var entry in translationEntities)
             {
                 var translation = Activator.CreateInstance(translationEntity.Type);
@@ -74,7 +75,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 }
                 else
                 {
-                    var existingTranslations = (IEnumerable<IDictionary<string, object>>)method.Invoke(null, new object[] { context, entity, translationEntity, translationEntities });
+                    existingTranslations ??= ((IEnumerable<IDictionary<string, object>>)method.Invoke(null, new object[] { context, entity, translationEntity, translationEntities })).ToList();
 
                     var existingTranslation = existingTranslations.AsQueryable();
                     foreach (var property in context.Entry(translation).Properties
@@ -120,7 +121,10 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
             using (var command = context.Database.GetDbConnection().CreateCommand())
             {
+                //All parameters come from internal configurations but translations
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                 command.CommandText = query.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                 foreach (var parameter in translationEntities.Select((translation, entityIndex) => translationEntity.KeysFromLanguageEntity
                     .Select((key, keyIndex) => (Name: $"{key.Name}{entityIndex}", Value: translation.LanguageKey[keyIndex])))

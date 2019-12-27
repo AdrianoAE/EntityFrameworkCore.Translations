@@ -1,5 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
+    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.1.1'">
+Fixes:
+* Fix issue where updating translations where querying the database more than once
+    </PackageReleaseNotes>
     <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.1.0'">
 Enhancements:
 * Support for updating entities with translation
