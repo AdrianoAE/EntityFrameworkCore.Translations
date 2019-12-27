@@ -138,8 +138,8 @@ namespace IngredientsWithTranslation
 
             #region Console Output
             Console.WriteLine($"Original translations:");
-            var teste = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
-            foreach (var item in teste)
+            var appleTranslations = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
+            foreach (var item in appleTranslations)
             {
                 Console.WriteLine($"\tId: {apple.Id}\tName: {item.Name}");
             }
@@ -162,15 +162,11 @@ namespace IngredientsWithTranslation
 
             #region Console Output
             Console.WriteLine($"\nAdded/Updated translations:");
-            var appleEN = await context.Ingredients.AsNoTracking().WithLanguage(English).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
-            var applePT = await context.Ingredients.AsNoTracking().WithLanguage(Portuguese).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
-            var appleDE = await context.Ingredients.AsNoTracking().WithLanguage(German).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
-            var appleFR = await context.Ingredients.AsNoTracking().WithLanguage(French).WithFallback(DefaultLanguage).FirstOrDefaultAsync(i => i.Id == 3);
-
-            Console.WriteLine($"\tId: {appleEN.Id}\tName: {appleEN.Name}");
-            Console.WriteLine($"\tId: {applePT.Id}\tName: {applePT.Name}");
-            Console.WriteLine($"\tId: {appleDE.Id}\tName: {appleDE.Name}");
-            Console.WriteLine($"\tId: {appleFR.Id}\tName: {appleFR.Name}");
+            appleTranslations = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
+            foreach (var item in appleTranslations)
+            {
+                Console.WriteLine($"\tId: {apple.Id}\tName: {item.Name}");
+            }
             #endregion
             #endregion
 
