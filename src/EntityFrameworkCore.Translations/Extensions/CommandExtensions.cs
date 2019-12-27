@@ -1,0 +1,167 @@
+﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
+using AdrianoAE.EntityFrameworkCore.Translations.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+
+namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
+{
+    public static class CommandExtensions
+    {
+        private static MethodInfo configureEntityMethod => typeof(CommandExtensions)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .Single(t => t.IsGenericMethod && t.Name == nameof(GetExistingTranslations));
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        public static void UpsertTranslation<TEntity>([NotNull] this IQueryable<TEntity> source, TEntity entity, TEntity translation, params object[] languageKey)
+            where TEntity : class
+            => UpsertTranslationRange(source, entity, new Translation<TEntity>(translation, languageKey));
+
+        //═════════════════════════════════════════════════════════════════════════════════════════
+
+        public static void UpsertTranslation<TEntity>([NotNull] this IQueryable<TEntity> source, TEntity entity, Translation<TEntity> translationEntity)
+            where TEntity : class
+            => UpsertTranslationRange(source, entity, translationEntity);
+
+        //═════════════════════════════════════════════════════════════════════════════════════════
+
+        public static void UpsertTranslationRange<TEntity>([NotNull] this IQueryable<TEntity> source, TEntity entity, params Translation<TEntity>[] translationEntities)
+            where TEntity : class
+        {
+            int parameterPosition;
+            var context = PersistenceHelpers.GetDbContext(source);
+            var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
+
+            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(t => t.LanguageKey).ToArray());
+
+            foreach (var entry in translationEntities)
+            {
+                var translation = Activator.CreateInstance(translationEntity.Type);
+                var trackedEntity = context.ChangeTracker.Entries().Where(x => x.Entity.GetType() == translationEntity.Type);
+
+                foreach (var property in entry.Entity.GetType().GetProperties())
+                {
+                    translationEntity.Type.GetProperty(property.Name)?.SetValue(translation, property.GetValue(entry.Entity));
+                }
+
+                parameterPosition = 0;
+                foreach (var property in translationEntity.KeysFromLanguageEntity)
+                {
+                    context.Entry(translation).Property(property.Name).CurrentValue = entry.LanguageKey[parameterPosition];
+                    trackedEntity = trackedEntity.Where(x => x.Property(property.Name).CurrentValue.Equals(context.Entry(translation).Property(property.Name).CurrentValue));
+                    parameterPosition++;
+                }
+
+                foreach (var property in translationEntity.KeysFromSourceEntity)
+                {
+                    context.Entry(translation).Property(property.Value).CurrentValue = entity.GetType().GetProperty(property.Key).GetValue(entity);
+                    trackedEntity = trackedEntity.Where(x => x.Property(property.Value).CurrentValue.Equals(context.Entry(translation).Property(property.Value).CurrentValue));
+                }
+
+                var tracked = trackedEntity.SingleOrDefault();
+                if (tracked != null)
+                {
+                    tracked.CurrentValues.SetValues(context.Entry(translation).CurrentValues);
+                    context.Entry(tracked.Entity).State = EntityState.Modified;
+                }
+                else
+                {
+                    var method = configureEntityMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
+                    var existingTranslations = (IEnumerable<IDictionary<string, object>>)method.Invoke(null, new object[] { context, entity, translationEntity, translationEntities });
+
+                    var existingTranslation = existingTranslations.AsQueryable();
+                    foreach (var property in context.Entry(translation).Properties
+                        .Where(p => translationEntity.KeysFromLanguageEntity.Select(x => x.Name).Contains(p.Metadata.Name)
+                            || translationEntity.KeysFromSourceEntity.Select(x => x.Value).Contains(p.Metadata.Name)))
+                    {
+                        existingTranslation = existingTranslation.Where(p => p[property.Metadata.Name].Equals(property.CurrentValue));
+                    }
+
+                    if (existingTranslation.Count() > 0)
+                    {
+                        context.Entry(translation).State = EntityState.Modified;
+                    }
+                    else
+                    {
+                        context.Entry(translation).State = EntityState.Added;
+                    }
+                }
+            }
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static IEnumerable<IDictionary<string, object>> GetExistingTranslations<TEntity, TTranslatedEntity>(this DbContext context, TEntity entity,
+            TranslationEntity translationEntity, Translation<TEntity>[] translationEntities)
+            where TEntity : class
+            where TTranslatedEntity : class
+        {
+            var schema = !string.IsNullOrWhiteSpace(translationEntity.Schema) ? $"[{translationEntity.Schema}]." : string.Empty;
+
+            var query = new StringBuilder();
+            query.Append("SELECT ");
+            query.Append(string.Join(" ,", context.Model.FindEntityType(translationEntity.Type).GetProperties().Select(x => $"[t].[{x.GetColumnName()}]")));
+            query.Append($" FROM {schema}[{translationEntity.TableName}] AS [t]");
+            query.Append(" WHERE ");
+            query.Append(string.Join(" ,", translationEntity.KeysFromSourceEntity
+                .Select(property => $"[t].[{property.Value}] = {entity.GetType().GetProperty(property.Key).GetValue(entity)}")));
+            query.Append(" AND (");
+            query.Append(string.Join(" OR ", translationEntities
+                .Select((translation, index) => string.Join(" ,", translationEntity.KeysFromLanguageEntity
+                    .Select(key => $"[t].[{key.Name}] = @{key.Name}{index}")))));
+            query.Append(" );");
+
+            using (var command = context.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = query.ToString();
+
+                foreach (var item in translationEntities.Select((translation, index) => translationEntity.KeysFromLanguageEntity
+                    .Select((key, index2) => Tuple.Create($"{key.Name}{index}", translation.LanguageKey[index2])))
+                    .SelectMany(x => x))
+                {
+                    command.AddParameterWithValue(item.Item1, item.Item2);
+                }
+
+                context.Database.OpenConnection();
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        yield return SqlDataReaderToExpando(reader);
+                    }
+                }
+            }
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static void AddParameterWithValue(this DbCommand command, string parameterName, object parameterValue)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Value = parameterValue;
+            command.Parameters.Add(parameter);
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static IDictionary<string, object> SqlDataReaderToExpando(DbDataReader reader)
+        {
+            var expandoObject = new ExpandoObject() as IDictionary<string, object>;
+
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                expandoObject.Add(reader.GetName(i), reader[i]);
+            }
+
+            return expandoObject;
+        }
+    }
+}

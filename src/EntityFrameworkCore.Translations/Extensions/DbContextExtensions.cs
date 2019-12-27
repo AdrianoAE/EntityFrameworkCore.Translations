@@ -35,7 +35,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
                 foreach (var property in entry.Entity.GetType().GetProperties())
                 {
-                    translationEntity.Type.GetProperty(property.Name)?.SetValue(translation, property.GetValue(entry.Entity), null);
+                    translationEntity.Type.GetProperty(property.Name)?.SetValue(translation, property.GetValue(entry.Entity));
                 }
 
                 parameterPosition = 0;

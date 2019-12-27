@@ -157,7 +157,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
             foreach (var property in translation.GetType().GetProperties())
             {
-                entityType.GetProperty(property.Name)?.SetValue(entity, property.GetValue(translation), null);
+                entityType.GetProperty(property.Name)?.SetValue(entity, property.GetValue(translation));
             }
 
             return entity;
