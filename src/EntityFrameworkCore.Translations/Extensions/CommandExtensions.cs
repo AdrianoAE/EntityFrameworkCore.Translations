@@ -38,13 +38,14 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             int parameterPosition;
             var context = PersistenceHelpers.GetDbContext(source);
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
+            var method = configureEntityMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
 
-            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(t => t.LanguageKey).ToArray());
+            PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(translation => translation.LanguageKey).ToArray());
 
             foreach (var entry in translationEntities)
             {
                 var translation = Activator.CreateInstance(translationEntity.Type);
-                var trackedEntity = context.ChangeTracker.Entries().Where(x => x.Entity.GetType() == translationEntity.Type);
+                var trackedEntity = context.ChangeTracker.Entries().Where(entry => entry.Entity.GetType() == translationEntity.Type);
 
                 foreach (var property in entry.Entity.GetType().GetProperties())
                 {
@@ -55,14 +56,14 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 foreach (var property in translationEntity.KeysFromLanguageEntity)
                 {
                     context.Entry(translation).Property(property.Name).CurrentValue = entry.LanguageKey[parameterPosition];
-                    trackedEntity = trackedEntity.Where(x => x.Property(property.Name).CurrentValue.Equals(context.Entry(translation).Property(property.Name).CurrentValue));
+                    trackedEntity = trackedEntity.Where(entry => entry.Property(property.Name).CurrentValue.Equals(context.Entry(translation).Property(property.Name).CurrentValue));
                     parameterPosition++;
                 }
 
                 foreach (var property in translationEntity.KeysFromSourceEntity)
                 {
                     context.Entry(translation).Property(property.Value).CurrentValue = entity.GetType().GetProperty(property.Key).GetValue(entity);
-                    trackedEntity = trackedEntity.Where(x => x.Property(property.Value).CurrentValue.Equals(context.Entry(translation).Property(property.Value).CurrentValue));
+                    trackedEntity = trackedEntity.Where(entry => entry.Property(property.Value).CurrentValue.Equals(context.Entry(translation).Property(property.Value).CurrentValue));
                 }
 
                 var tracked = trackedEntity.SingleOrDefault();
@@ -73,7 +74,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 }
                 else
                 {
-                    var method = configureEntityMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
                     var existingTranslations = (IEnumerable<IDictionary<string, object>>)method.Invoke(null, new object[] { context, entity, translationEntity, translationEntities });
 
                     var existingTranslation = existingTranslations.AsQueryable();
@@ -107,7 +107,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
             var query = new StringBuilder();
             query.Append("SELECT ");
-            query.Append(string.Join(" ,", context.Model.FindEntityType(translationEntity.Type).GetProperties().Select(x => $"[t].[{x.GetColumnName()}]")));
+            query.Append(string.Join(" ,", context.Model.FindEntityType(translationEntity.Type).GetProperties().Select(property => $"[t].[{property.GetColumnName()}]")));
             query.Append($" FROM {schema}[{translationEntity.TableName}] AS [t]");
             query.Append(" WHERE ");
             query.Append(string.Join(" ,", translationEntity.KeysFromSourceEntity
@@ -122,11 +122,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             {
                 command.CommandText = query.ToString();
 
-                foreach (var item in translationEntities.Select((translation, index) => translationEntity.KeysFromLanguageEntity
-                    .Select((key, index2) => Tuple.Create($"{key.Name}{index}", translation.LanguageKey[index2])))
-                    .SelectMany(x => x))
+                foreach (var parameter in translationEntities.Select((translation, entityIndex) => translationEntity.KeysFromLanguageEntity
+                    .Select((key, keyIndex) => (Name: $"{key.Name}{entityIndex}", Value: translation.LanguageKey[keyIndex])))
+                    .SelectMany(tuple => tuple))
                 {
-                    command.AddParameterWithValue(item.Item1, item.Item2);
+                    command.AddParameterWithValue(parameter.Name, parameter.Value);
                 }
 
                 context.Database.OpenConnection();
