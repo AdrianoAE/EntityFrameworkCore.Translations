@@ -3,13 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
     public static class DbContextExtensions
     {
-        public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, params object[] languageKey)
+        public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, CancellationToken cancellationToken = default, params object[] languageKey)
         {
             int parameterPosition = 0;
 
@@ -23,7 +24,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     && TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
                 .ToList();
 
-            var result = await context.SaveChangesAsync();
+            var result = await context.SaveChangesAsync(cancellationToken);
 
             foreach (var entry in addedEntries)
             {
@@ -100,7 +101,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 }
             }
 
-            return result += await context.SaveChangesAsync();
+            return result += await context.SaveChangesAsync(cancellationToken);
         }
     }
 }
