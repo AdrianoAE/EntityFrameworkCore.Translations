@@ -88,7 +88,7 @@ namespace IngredientsWithTranslation
 
             var noodle = new Ingredient("Noodle");
             await context.Ingredients.AddAsync(noodle);
-            await context.SaveChangesWithTranslationsAsync(DefaultLanguage);
+            await context.SaveChangesWithTranslationsAsync(default, DefaultLanguage);
 
             #region Console Output
             var noodleResult = await context.Ingredients
@@ -115,7 +115,7 @@ namespace IngredientsWithTranslation
 
             rice.SetName("Bowl of Rice");
             context.Update(rice); //This is required because EFCore can't track the translated properties
-            await context.SaveChangesWithTranslationsAsync(DefaultLanguage);
+            await context.SaveChangesWithTranslationsAsync(default, DefaultLanguage);
 
             #region Console Output
             var riceQuery = await context.Ingredients
