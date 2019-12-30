@@ -14,7 +14,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 {
     public static class CommandExtensions
     {
-        private static MethodInfo configureEntityMethod => typeof(CommandExtensions)
+        private static MethodInfo getExistingTranslationsMethod => typeof(CommandExtensions)
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
                 .Single(t => t.IsGenericMethod && t.Name == nameof(GetExistingTranslations));
 
@@ -38,7 +38,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             int parameterPosition;
             var context = PersistenceHelpers.GetDbContext(source);
             var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
-            var method = configureEntityMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
+            var method = getExistingTranslationsMethod.MakeGenericMethod(typeof(TEntity), translationEntity.Type);
             IEnumerable<IDictionary<string, object>> existingTranslations = null;
 
             PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(translation => translation.LanguageKey).ToArray());
