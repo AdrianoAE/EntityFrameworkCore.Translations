@@ -232,8 +232,6 @@ namespace IngredientsWithTranslation
 
             var ingredientToDelete = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 1);
             context.Ingredients.Remove(ingredientToDelete);
-            var ingredientToDelete2 = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 2);
-            context.Ingredients.Remove(ingredientToDelete2);
             await context.SaveChangesWithTranslationsAsync();
 
             #region Console Output
