@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +19,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
         {
             bool hasActiveTransaction = context.Database.CurrentTransaction != null;
             IDbContextTransaction transaction = context.Database.CurrentTransaction
-                ?? await context.Database.BeginTransactionAsync(TranslationConfiguration.IsolationLevel);
+                ?? await context.Database.BeginTransactionAsync(TranslationConfiguration.IsolationLevel, cancellationToken);
 
             var entries = context.ChangeTracker.Entries()
                 .Where(entry => TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
@@ -36,6 +38,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                         ConfigureModifiedEntries(context, state, languageKey);
                         break;
                     case EntityState.Deleted:
+                        await ConfigureDeletedEntries(context, state, cancellationToken);
                         break;
                     default:
                         break;
@@ -46,7 +49,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
             if (!hasActiveTransaction)
             {
-                await CommitTransactionAsync(transaction);
+                await CommitTransactionAsync(transaction, cancellationToken);
             }
 
             return result;
@@ -56,7 +59,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
         private static void ConfigureAddedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, object[] languageKey)
         {
-            int parameterPosition = 0;
+            int parameterPosition;
 
             foreach (var entry in state)
             {
@@ -91,7 +94,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
         private static void ConfigureModifiedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, object[] languageKey)
         {
-            int parameterPosition = 0;
+            int parameterPosition;
 
             foreach (var entry in state)
             {
@@ -143,13 +146,72 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        private static async Task CommitTransactionAsync(IDbContextTransaction transaction)
+        private static async Task ConfigureDeletedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, CancellationToken cancellationToken = default)
         {
-            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
+            foreach (var entry in state)
+            {
+                var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
+                var onDeleteSetPropertyValue = translationEntity.OnDeleteSetPropertyValue.Count > 0
+                    ? (IReadOnlyDictionary<string, object>)translationEntity.OnDeleteSetPropertyValue
+                    : TranslationConfiguration.OnDeleteSetPropertyValue;
+
+                if (translationEntity.SoftDelete && translationEntity.DeleteBehavior == DeleteBehavior.Cascade)
+                {
+                    if (onDeleteSetPropertyValue == null)
+                    {
+                        throw new ArgumentNullException(nameof(onDeleteSetPropertyValue), "Soft delete requires configuration of the properties and the desired value to be set on delete." +
+                            " Configure it for all entities using TranslationConfiguration.SetDeleteBehavior(DeleteBehavior.Cascade, true, new Dictionary<string, object> { ... })" +
+                            " and/or per entity using entityTypeBuilder.TranslationDeleteBehavior(DeleteBehavior.Cascade, true, new Dictionary<string, object> { ... })");
+                    }
+
+                    var schema = !string.IsNullOrWhiteSpace(translationEntity.Schema) ? $"[{translationEntity.Schema}]." : string.Empty;
+
+                    var query = new StringBuilder();
+                    query.Append($"UPDATE {schema}[{translationEntity.TableName}] SET ");
+                    query.Append(string.Join(", ", onDeleteSetPropertyValue.Select(key => $"[{key.Key}] = @{key.Key}")));
+                    query.Append(" WHERE ");
+                    query.Append(string.Join(" AND ", translationEntity.KeysFromSourceEntity
+                        .Select(property => $"[{property.Value}] = @{property.Value}")));
+
+                    using (var command = context.Database.GetDbConnection().CreateCommand())
+                    {
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
+                        command.CommandText = query.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+                        command.Transaction = context.Database.CurrentTransaction.GetDbTransaction();
+
+                        foreach (var property in onDeleteSetPropertyValue)
+                        {
+                            command.AddParameterWithValue(property.Key, property.Value);
+                        }
+
+                        foreach (var parameter in translationEntity.KeysFromSourceEntity
+                            .Select(property => (Name: property.Value, Value: entry.Entity.GetType().GetProperty(property.Key).GetValue(entry.Entity))))
+                        {
+                            command.AddParameterWithValue(parameter.Name, parameter.Value);
+                        }
+
+                        await context.Database.OpenConnectionAsync(cancellationToken);
+                        await command.ExecuteNonQueryAsync(cancellationToken);
+                    }
+
+                    entry.State = EntityState.Unchanged;
+                }
+            }
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
+        {
+            if (transaction == null)
+            {
+                throw new ArgumentNullException(nameof(transaction));
+            }
 
             try
             {
-                await transaction.CommitAsync();
+                await transaction.CommitAsync(cancellationToken);
             }
             catch
             {
@@ -168,15 +230,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
         {
             try
             {
-                transaction?.Rollback();
+                transaction.Rollback();
             }
             finally
             {
-                if (transaction != null)
-                {
-                    transaction.Dispose();
-                    transaction = null;
-                }
+                transaction.Dispose();
             }
         }
     }

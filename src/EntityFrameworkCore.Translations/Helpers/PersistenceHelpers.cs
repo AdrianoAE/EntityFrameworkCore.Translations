@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 
@@ -73,6 +74,16 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 #pragma warning disable EF1001 // Internal EF Core API usage.
             return stateManager.Context;
 #pragma warning restore EF1001 // Internal EF Core API usage.
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        internal static void AddParameterWithValue(this DbCommand command, string parameterName, object parameterValue)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Value = parameterValue;
+            command.Parameters.Add(parameter);
         }
     }
 }

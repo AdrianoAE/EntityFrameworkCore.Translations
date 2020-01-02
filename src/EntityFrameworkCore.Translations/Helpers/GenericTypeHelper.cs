@@ -24,9 +24,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        internal static string GetGenericTypeName(this object @object)
-        {
-            return @object.GetType().GetGenericTypeName();
-        }
+        internal static string GetGenericTypeName(this object @object) 
+            => @object.GetType().GetGenericTypeName();
     }
 }

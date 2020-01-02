@@ -8,7 +8,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
         internal static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string name, object value)
             where TSource : class
         {
-            string annotationName = $"{TranslationConfiguration.Prefix}{name}";
+            string annotationName = $"{TranslationAnnotationNames.Prefix}{name}";
 
             var existingAnnotation = builder.Metadata.FindAnnotation(annotationName);
 
@@ -28,7 +28,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 
         internal static PropertyBuilder<string> ConfigureProperty(this EntityTypeBuilder builder, IMutableProperty property)
         {
-            var newProperty = builder.Property<string>(property.Name.Replace(TranslationConfiguration.Prefix, "")).Metadata;
+            var newProperty = builder.Property<string>(property.Name.Replace(TranslationAnnotationNames.Prefix, string.Empty)).Metadata;
 
             foreach (var item in property.GetAnnotations())
             {

@@ -32,7 +32,10 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                 if (translationEntity != null)
                 {
                     var propertiesWithTranslation = entity.GetProperties()
-                        .Where(property => translationEntity.Type.GetProperties().Select(p => p.Name).Contains(property.Name))
+                        .Where(efproperty => translationEntity.Type.GetProperties()
+                            .Where(property => property.PropertyType == typeof(string))
+                            .Select(p => p.Name)
+                            .Contains(efproperty.Name))
                         .ToList();
 
                     if (propertiesWithTranslation.Count > 0)
@@ -76,21 +79,22 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
         private static string GetTranslationTableName(this IMutableEntityType entity)
-            => entity.FindAnnotation($"{TranslationConfiguration.Prefix}Table")?.Value.ToString()
+            => entity.FindAnnotation($"{TranslationAnnotationNames.Table}")?.Value.ToString()
                 ?? entity.GetTableName() +
-                    (entity.FindAnnotation($"{TranslationConfiguration.Prefix}Suffix")?.Value
+                    (entity.FindAnnotation($"{TranslationAnnotationNames.Suffix}")?.Value
                     ?? TranslationConfiguration.Suffix);
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
         private static string GetSchemaName(this IMutableEntityType entity)
-            => entity.FindAnnotation($"{TranslationConfiguration.Prefix}Schema")?.Value.ToString()
+            => entity.FindAnnotation($"{TranslationAnnotationNames.Schema}")?.Value.ToString()
                 ?? TranslationConfiguration.LanguageTableConfiguration?.TranslationsSchema
                 ?? entity.GetSchema();
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        private static void ConfigureEntity<TType>(ModelBuilder modelBuilder, IMutableEntityType entity, Type languageEntity, IMutableEntityType languageBuilder, List<IMutableProperty> propertiesWithTranslation)
+        private static void ConfigureEntity<TType>(ModelBuilder modelBuilder, IMutableEntityType entity, Type languageEntity, 
+            IMutableEntityType languageBuilder, List<IMutableProperty> propertiesWithTranslation)
             where TType : class
         {
             var table = entity.GetTranslationTableName();
@@ -99,6 +103,8 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
             configuration.Schema = schema;
             configuration.TableName = table;
+            configuration.SoftDelete = (bool)(entity.FindAnnotation($"{TranslationAnnotationNames.SoftDelete}")?.Value ?? TranslationConfiguration.SoftDelete);
+            configuration.DeleteBehavior = (DeleteBehavior)(entity.FindAnnotation($"{TranslationAnnotationNames.DeleteBehavior}")?.Value ?? TranslationConfiguration.DeleteBehavior);
 
             modelBuilder.Entity<TType>(translationConfiguration =>
             {
@@ -109,7 +115,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                     languageBuilder = modelBuilder.Entity(languageEntity).Metadata;
                 }
 
-                translationConfiguration.ConfigureKeys(entity, languageBuilder);
+                translationConfiguration.ConfigureKeys(entity, languageBuilder, configuration);
 
                 foreach (var property in propertiesWithTranslation)
                 {
@@ -120,11 +126,9 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        private static void ConfigureKeys(this EntityTypeBuilder builder, IMutableEntityType entity, IMutableEntityType languageBuilder)
+        private static void ConfigureKeys(this EntityTypeBuilder builder, IMutableEntityType entity, IMutableEntityType languageBuilder, TranslationEntity configuration)
         {
             var primaryKeys = new List<string>();
-            var deleteBehavior = (DeleteBehavior)(entity.FindAnnotation($"{TranslationConfiguration.Prefix}DeleteBehavior")?.Value ?? TranslationConfiguration.DeleteBehavior);
-            var configuration = TranslationConfiguration.TranslationEntities[entity.ClrType.FullName];
 
             //Source Table
             foreach (var key in entity.GetProperties().Where(p => p.IsPrimaryKey()))
@@ -141,7 +145,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
             builder.HasOne(entity.ClrType)
                 .WithMany()
                 .HasForeignKey(primaryKeys.ToArray())
-                .OnDelete(deleteBehavior);
+                .OnDelete(configuration.DeleteBehavior);
 
             //Language Table
             if (languageBuilder == null)
@@ -173,7 +177,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                 builder.HasOne(languageBuilder.ClrType)
                     .WithMany()
                     .HasForeignKey(foreignKeys.Select(fk => fk.Name).ToArray())
-                    .OnDelete(deleteBehavior);
+                    .OnDelete(configuration.DeleteBehavior);
 
                 TranslationConfiguration.LanguageTableConfiguration = new LanguageTableConfiguration(foreignKeys);
             }
