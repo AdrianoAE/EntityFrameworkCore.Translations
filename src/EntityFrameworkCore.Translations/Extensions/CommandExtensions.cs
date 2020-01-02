@@ -112,7 +112,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             query.Append($" FROM {schema}[{translationEntity.TableName}] AS [t]");
             query.Append(" WHERE ");
             query.Append(string.Join(" AND ", translationEntity.KeysFromSourceEntity
-                .Select(property => $"[t].[{property.Value}] = {entity.GetType().GetProperty(property.Key).GetValue(entity)}")));
+                .Select(property => $"[t].[{property.Value}] = @{property.Value}")));
             query.Append(" AND (");
             query.Append(string.Join(" OR ", translationEntities
                 .Select((translation, index) => string.Join(" ,", translationEntity.KeysFromLanguageEntity
@@ -121,10 +121,15 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
             using (var command = context.Database.GetDbConnection().CreateCommand())
             {
-                //All parameters come from internal configurations but translations
 #pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                 command.CommandText = query.ToString();
 #pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+
+                foreach (var parameter in translationEntity.KeysFromSourceEntity
+                    .Select(property => (Name: property.Value, Value: entity.GetType().GetProperty(property.Key).GetValue(entity))))
+                {
+                    command.AddParameterWithValue(parameter.Name, parameter.Value);
+                }
 
                 foreach (var parameter in translationEntities.Select((translation, entityIndex) => translationEntity.KeysFromLanguageEntity
                     .Select((key, keyIndex) => (Name: $"{key.Name}{entityIndex}", Value: translation.LanguageKey[keyIndex])))
@@ -142,16 +147,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     }
                 }
             }
-        }
-
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        private static void AddParameterWithValue(this DbCommand command, string parameterName, object parameterValue)
-        {
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = parameterName;
-            parameter.Value = parameterValue;
-            command.Parameters.Add(parameter);
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
