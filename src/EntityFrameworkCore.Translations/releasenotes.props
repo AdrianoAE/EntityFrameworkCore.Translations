@@ -1,6 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.2.1'">
+    <PackageReleaseNotes>
 Changes in 0.2.2-alpha:
 * Fixed soft delete to only modify the entity state and update database if necessary
       
