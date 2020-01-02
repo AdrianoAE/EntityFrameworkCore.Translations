@@ -151,7 +151,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             foreach (var entry in state)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
-                var onDeleteSetPropertyValue = translationEntity.OnSoftDeleteSetPropertyValue.Count > 0
+                var onDeleteSetPropertyValue = translationEntity.OnSoftDeleteSetPropertyValue?.Count > 0
                     ? (IReadOnlyDictionary<string, object>)translationEntity.OnSoftDeleteSetPropertyValue
                     : TranslationConfiguration.OnSoftDeleteSetPropertyValue;
 
