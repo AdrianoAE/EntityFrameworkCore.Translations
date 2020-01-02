@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -182,21 +181,25 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     foreach (var parameter in translationEntity.KeysFromSourceEntity
                         .Select(property => (Name: property.Value, Value: entry.Entity.GetType().GetProperty(property.Key).GetValue(entry.Entity))))
                     {
-                        command.AddParameterWithValue($"{parameter.Name}{ parameterPosition}", parameter.Value);
+                        command.AddParameterWithValue($"{parameter.Name}{parameterPosition}", parameter.Value);
                     }
-                }
 
-                entry.State = EntityState.Unchanged;
-                parameterPosition++;
+                    entry.State = EntityState.Unchanged;
+                    parameterPosition++;
+                }
             }
 
 #pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
             command.CommandText = query.ToString();
 #pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
-            command.Transaction = context.Database.CurrentTransaction.GetDbTransaction();
 
-            await context.Database.OpenConnectionAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(query.ToString()))
+            {
+                command.Transaction = context.Database.CurrentTransaction.GetDbTransaction();
+
+                await context.Database.OpenConnectionAsync(cancellationToken);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
