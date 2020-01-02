@@ -1,9 +1,13 @@
-﻿using AdrianoAE.EntityFrameworkCore.Translations.Extensions;
+﻿using AdrianoAE.EntityFrameworkCore.Translations;
+using AdrianoAE.EntityFrameworkCore.Translations.Extensions;
 using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
 using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace IngredientsWithTranslation
@@ -16,11 +20,16 @@ namespace IngredientsWithTranslation
         public const int French = 4;
         public const int DefaultLanguage = English;
 
+        public static IReadOnlyDictionary<string, object> OnSoftDeleteSetPropertyValue = new Dictionary<string, object>()
+        {
+            { "IsDeleted", 1}
+        };
+
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ Domain Layer ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
         public class Ingredient
         {
-            public int Id { get; internal set; } //internal set only to help with DataSeeding
+            public int Id { get; internal set; } //internal set for DataSeeding
             public string Name { get; private set; }
 
             private Ingredient() { } //Required by EF
@@ -39,20 +48,49 @@ namespace IngredientsWithTranslation
             public string Name { get; set; }
         }
 
+        #region --- Soft Delete Shadow Property Configurations
+        public abstract class AuditableEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<TEntity>
+              where TEntity : class
+        {
+            public virtual void Configure(EntityTypeBuilder<TEntity> builderConfiguration)
+            {
+                builderConfiguration.Property<bool>("IsDeleted")
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                builderConfiguration.HasQueryFilter(b => EF.Property<bool>(b, "IsDeleted") == false);
+            }
+        }
+
+        public class IngredientEntityConfiguration : AuditableEntityTypeConfiguration<Ingredient>
+        {
+            public override void Configure(EntityTypeBuilder<Ingredient> categoryConfiguration)
+                => base.Configure(categoryConfiguration);
+        }
+
+        public class IngredientTranslationEntityConfiguration : AuditableEntityTypeConfiguration<IngredientTranslation>
+        {
+            public override void Configure(EntityTypeBuilder<IngredientTranslation> categoryConfiguration) 
+                => base.Configure(categoryConfiguration);
+        }
+        #endregion
+
         public class IngredientContext : DbContext
         {
             public DbSet<Ingredient> Ingredients { get; set; }
             public DbSet<IngredientTranslation> IngredientsTranslations { get; set; }
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-                => optionsBuilder
-                    .EnableSensitiveDataLogging()
-                    .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=TranslatedIngredientsSampleDB;ConnectRetryCount=0");
+                => optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=TranslatedIngredientsSampleDB;ConnectRetryCount=0");
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-                //Non existent Language table with (int)LanguageId as Foreign Key
-                modelBuilder.ApplyTranslationsConfigurations(typeof(int), "LanguageId");
+                modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngredientContext).Assembly)
+                    //Non existent Language table with (int)LanguageId as Foreign Key
+                    //Check the overloads for more options
+                    .ApplyTranslationsConfigurations(typeof(int), "LanguageId");
+
+                TranslationConfiguration.SetDeleteBehavior(DeleteBehavior.Cascade, true, OnSoftDeleteSetPropertyValue);
 
                 #region Seeding
                 modelBuilder.Entity<Ingredient>().HasData(
@@ -65,8 +103,23 @@ namespace IngredientsWithTranslation
                     new { IngredientId = 1, LanguageId = Portuguese, Name = "Batata" },
                     new { IngredientId = 2, LanguageId = English, Name = "Rice" },
                     new { IngredientId = 3, LanguageId = English, Name = "Rotten Apple" },
-                    new { IngredientId = 3, LanguageId = Portuguese, Name = "Maça Podre" });
+                    new { IngredientId = 3, LanguageId = Portuguese, Name = "Maçã Podre" });
                 #endregion
+            }
+
+            public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+            {
+                UpdateSoftDeleteStatuses();
+                return await base.SaveChangesAsync(cancellationToken);
+            }
+
+            private void UpdateSoftDeleteStatuses()
+            {
+                foreach (var entry in ChangeTracker.Entries().Where(e => e.Properties.Any(p => p.Metadata.Name == "IsDeleted") && e.State == EntityState.Deleted))
+                {
+                    entry.State = EntityState.Modified;
+                    entry.CurrentValues["IsDeleted"] = true;
+                }
             }
         }
 
@@ -111,7 +164,7 @@ namespace IngredientsWithTranslation
                 .WithFallback(DefaultLanguage)
                 .FirstOrDefaultAsync(i => i.Id == 2);
 
-            Console.WriteLine($"\tOriginal\tId: {rice.Id}\tName: {rice.Name}");
+            Console.WriteLine($"    Original:\n\tId: {rice.Id}\tName: {rice.Name}");
 
             rice.SetName("Bowl of Rice");
             context.Update(rice); //This is required because EFCore can't track the translated properties
@@ -124,20 +177,22 @@ namespace IngredientsWithTranslation
                 .WithFallback(DefaultLanguage)
                 .FirstOrDefaultAsync(i => i.Id == 2);
 
-            Console.WriteLine($"\tModified\tId: {riceQuery.Id}\tName: {riceQuery.Name}");
+            Console.WriteLine($"    Modified:\n\tId: {riceQuery.Id}\tName: {riceQuery.Name}");
             #endregion
             #endregion
 
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 
             #region --- Add/Update translations
+            Console.WriteLine($"Add/Update translations:");
+
             var apple = await context.Ingredients
                 .WithLanguage(DefaultLanguage)
                 .WithFallback(DefaultLanguage)
                 .FirstOrDefaultAsync(i => i.Id == 3);
 
             #region Console Output
-            Console.WriteLine($"Original translations:");
+            Console.WriteLine($"    Original:");
             var appleTranslations = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
             foreach (var item in appleTranslations)
             {
@@ -146,7 +201,7 @@ namespace IngredientsWithTranslation
             #endregion
 
             var appleEnglish = new Ingredient("Apple");
-            var applePortuguese = new Ingredient("Maça");
+            var applePortuguese = new Ingredient("Maçã");
             var appleGerman = new Ingredient("Apfel");
             var appleFrench = new Ingredient("Pomme");
 
@@ -161,7 +216,7 @@ namespace IngredientsWithTranslation
             await context.SaveChangesAsync();
 
             #region Console Output
-            Console.WriteLine($"\nAdded/Updated translations:");
+            Console.WriteLine($"\n    Added/Updated:");
             appleTranslations = await context.IngredientsTranslations.AsNoTracking().Where(i => EF.Property<int>(i, "IngredientId") == 3).ToListAsync();
             foreach (var item in appleTranslations)
             {
@@ -172,10 +227,25 @@ namespace IngredientsWithTranslation
 
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 
+            #region --- Soft Delete enabled for translation tables
+            Console.WriteLine($"Potato soft deleted.");
+
+            var ingredientToDelete = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 1);
+            context.Ingredients.Remove(ingredientToDelete);
+            await context.SaveChangesWithTranslationsAsync();
+
+            #region Console Output
+            foreach (var property in OnSoftDeleteSetPropertyValue)
+            {
+                Console.WriteLine($"\tProperty '{property.Key}' set to '{property.Value}'");
+            }
+            #endregion
+            #endregion
+
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
             Console.WriteLine($"(Query) Final Values:");
             await PrintAll(context);
-
-            context.Database.EnsureDeleted();
         }
 
         private static async Task PrintAll(IngredientContext context)
