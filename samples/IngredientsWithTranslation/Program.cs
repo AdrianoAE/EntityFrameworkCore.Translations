@@ -85,12 +85,12 @@ namespace IngredientsWithTranslation
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
+                TranslationConfiguration.SetDeleteBehavior(DeleteBehavior.Cascade, true, OnSoftDeleteSetPropertyValue);
+
                 modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngredientContext).Assembly)
                     //Non existent Language table with (int)LanguageId as Foreign Key
                     //Check the overloads for more options
                     .ApplyTranslationsConfigurations(typeof(int), "LanguageId");
-
-                TranslationConfiguration.SetDeleteBehavior(DeleteBehavior.Cascade, true, OnSoftDeleteSetPropertyValue);
 
                 #region Seeding
                 modelBuilder.Entity<Ingredient>().HasData(
@@ -232,6 +232,8 @@ namespace IngredientsWithTranslation
 
             var ingredientToDelete = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 1);
             context.Ingredients.Remove(ingredientToDelete);
+            var ingredientToDelete2 = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 2);
+            context.Ingredients.Remove(ingredientToDelete2);
             await context.SaveChangesWithTranslationsAsync();
 
             #region Console Output
