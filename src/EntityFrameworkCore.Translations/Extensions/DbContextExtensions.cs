@@ -148,6 +148,10 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
         private static async Task ConfigureDeletedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, CancellationToken cancellationToken = default)
         {
+            using var command = context.Database.GetDbConnection().CreateCommand();
+            var query = new StringBuilder();
+            int parameterPosition = 0;
+
             foreach (var entry in state)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
@@ -166,38 +170,35 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
                     var schema = !string.IsNullOrWhiteSpace(translationEntity.Schema) ? $"[{translationEntity.Schema}]." : string.Empty;
 
-                    var query = new StringBuilder();
                     query.Append($"UPDATE {schema}[{translationEntity.TableName}] SET ");
-                    query.Append(string.Join(", ", onDeleteSetPropertyValue.Select(key => $"[{key.Key}] = @{key.Key}")));
+                    query.Append(string.Join(", ", onDeleteSetPropertyValue.Select(key => $"[{key.Key}] = @{key.Key}{parameterPosition}")));
                     query.Append(" WHERE ");
                     query.Append(string.Join(" AND ", translationEntity.KeysFromSourceEntity
-                        .Select(property => $"[{property.Value}] = @{property.Value}")));
+                        .Select(property => $"[{property.Value}] = @{property.Value}{parameterPosition}")));
+                    query.Append(";");
 
-                    using (var command = context.Database.GetDbConnection().CreateCommand())
+                    foreach (var property in onDeleteSetPropertyValue)
                     {
-#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
-                        command.CommandText = query.ToString();
-#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
-                        command.Transaction = context.Database.CurrentTransaction.GetDbTransaction();
-
-                        foreach (var property in onDeleteSetPropertyValue)
-                        {
-                            command.AddParameterWithValue(property.Key, property.Value);
-                        }
-
-                        foreach (var parameter in translationEntity.KeysFromSourceEntity
-                            .Select(property => (Name: property.Value, Value: entry.Entity.GetType().GetProperty(property.Key).GetValue(entry.Entity))))
-                        {
-                            command.AddParameterWithValue(parameter.Name, parameter.Value);
-                        }
-
-                        await context.Database.OpenConnectionAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
+                        command.AddParameterWithValue($"{property.Key}{parameterPosition}", property.Value);
                     }
 
-                    entry.State = EntityState.Unchanged;
+                    foreach (var parameter in translationEntity.KeysFromSourceEntity
+                        .Select(property => (Name: property.Value, Value: entry.Entity.GetType().GetProperty(property.Key).GetValue(entry.Entity))))
+                    {
+                        command.AddParameterWithValue($"{parameter.Name}{ parameterPosition}", parameter.Value);
+                    }
                 }
+                entry.State = EntityState.Unchanged;
+                parameterPosition++;
             }
+
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
+            command.CommandText = query.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+            command.Transaction = context.Database.CurrentTransaction.GetDbTransaction();
+
+            await context.Database.OpenConnectionAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken);
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■

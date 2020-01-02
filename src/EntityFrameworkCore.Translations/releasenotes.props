@@ -1,9 +1,12 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.2.0'">
+    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.2.1'">
+Changes in 0.2.1-alpha:
+* Updated soft delete to only query database once
+      
 Changes in 0.2.0-alpha:
 * Support for soft delete (Cascade)
-      
+
 Changes in 0.1.1-alpha:
 * Fix issue where updating translations were querying the database more than once
 
