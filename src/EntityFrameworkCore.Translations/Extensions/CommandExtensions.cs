@@ -42,7 +42,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             IEnumerable<IDictionary<string, object>> existingTranslations = null;
 
             PersistenceHelpers.ValidateLanguageKeys(translationEntity.KeysFromLanguageEntity, translationEntities.SelectMany(translation => translation.LanguageKey).ToArray());
-            
+
             foreach (var entry in translationEntities)
             {
                 var translation = Activator.CreateInstance(translationEntity.Type);
@@ -111,7 +111,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             query.Append(string.Join(" ,", context.Model.FindEntityType(translationEntity.Type).GetProperties().Select(property => $"[t].[{property.GetColumnName()}]")));
             query.Append($" FROM {schema}[{translationEntity.TableName}] AS [t]");
             query.Append(" WHERE ");
-            query.Append(string.Join(" ,", translationEntity.KeysFromSourceEntity
+            query.Append(string.Join(" AND ", translationEntity.KeysFromSourceEntity
                 .Select(property => $"[t].[{property.Value}] = {entity.GetType().GetProperty(property.Key).GetValue(entity)}")));
             query.Append(" AND (");
             query.Append(string.Join(" OR ", translationEntities
