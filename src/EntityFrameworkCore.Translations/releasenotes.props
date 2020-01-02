@@ -1,18 +1,15 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.1.1'">
-Fixes:
-* Fix issue where updating translations where querying the database more than once
-    </PackageReleaseNotes>
-    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.1.0'">
-Enhancements:
+    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.2.0'">
+Changes in 0.2.0-alpha:
+* Support for soft delete (Cascade)
+      
+Changes in 0.1.1-alpha:
+* Fix issue where updating translations were querying the database more than once
+
+Changes in 0.1.0-alpha:
 * Support for updating entities with translation
 * Support for adding/updating translations
-    </PackageReleaseNotes>
-    <PackageReleaseNotes Condition="'$(VersionPrefix)' == '0.0.1'">
-Note:
-* This project is in early development, currently supports the database model generation with and without a Language table,
-querying in the desired language with fallback language, insert and update (both intended to be used in the default language).
     </PackageReleaseNotes>
   </PropertyGroup>
 </Project>
