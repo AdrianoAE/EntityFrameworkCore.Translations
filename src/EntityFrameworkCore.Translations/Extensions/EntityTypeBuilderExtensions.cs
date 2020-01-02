@@ -42,7 +42,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
         {
             builder.AddAnnotation(TranslationAnnotationNames.SoftDelete, softDelete);
             builder.AddAnnotation(TranslationAnnotationNames.DeleteBehavior, deleteBehavior);
-            return builder.AddAnnotation(TranslationAnnotationNames.OnDeleteSetPropertyValue, onDeleteSetPropertyValue.Select(x => "").ToArray());
+            return builder.AddAnnotation(TranslationAnnotationNames.OnSoftDeleteSetPropertyValue, onDeleteSetPropertyValue);
         }
     }
 }

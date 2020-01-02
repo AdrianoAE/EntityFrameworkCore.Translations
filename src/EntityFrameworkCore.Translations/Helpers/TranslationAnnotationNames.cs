@@ -8,6 +8,6 @@
         public const string Suffix = Prefix + "Suffix";
         public const string SoftDelete = Prefix + "SoftDelete";
         public const string DeleteBehavior = Prefix + "DeleteBehavior";
-        public const string OnDeleteSetPropertyValue = Prefix + "OnDeleteSetPropertyValue";
+        public const string OnSoftDeleteSetPropertyValue = Prefix + "OnSoftDeleteSetPropertyValue";
     }
 }

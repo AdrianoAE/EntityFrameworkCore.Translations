@@ -11,7 +11,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Models
         internal string TableName { get; set; }
         internal DeleteBehavior DeleteBehavior { get; set; }
         internal bool SoftDelete { get; set; }
-        internal IDictionary<string, object> OnDeleteSetPropertyValue { get; private set; }
+        internal IDictionary<string, object> OnSoftDeleteSetPropertyValue { get; set; }
         internal IDictionary<string, string> KeysFromSourceEntity { get; private set; }
         internal ICollection<KeyConfiguration> KeysFromLanguageEntity { get; private set; }
 
@@ -20,7 +20,6 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Models
         internal TranslationEntity(Type type)
         {
             Type = type;
-            OnDeleteSetPropertyValue = new Dictionary<string, object>();
             KeysFromSourceEntity = new Dictionary<string, string>();
             KeysFromLanguageEntity = new List<KeyConfiguration>();
         }

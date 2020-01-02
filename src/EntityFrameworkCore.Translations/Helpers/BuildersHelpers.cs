@@ -5,11 +5,9 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Helpers
 {
     internal static class BuildersHelpers
     {
-        internal static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string name, object value)
+        internal static EntityTypeBuilder<TSource> AddAnnotation<TSource>(this EntityTypeBuilder<TSource> builder, string annotationName, object value)
             where TSource : class
         {
-            string annotationName = $"{TranslationAnnotationNames.Prefix}{name}";
-
             var existingAnnotation = builder.Metadata.FindAnnotation(annotationName);
 
             if (existingAnnotation == null)

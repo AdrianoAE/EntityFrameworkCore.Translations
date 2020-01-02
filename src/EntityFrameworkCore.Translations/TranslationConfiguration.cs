@@ -16,7 +16,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         private static Dictionary<string, TranslationEntity> _translationEntities;
         internal static IReadOnlyDictionary<string, TranslationEntity> TranslationEntities => _translationEntities;
-        internal static IReadOnlyDictionary<string, object> OnDeleteSetPropertyValue { get; private set; }
+        internal static IReadOnlyDictionary<string, object> OnSoftDeleteSetPropertyValue { get; private set; }
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
@@ -33,11 +33,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        public static void SetDeleteBehavior(DeleteBehavior deleteBehavior, bool softDelete = false, IReadOnlyDictionary<string, object> onDeleteSetPropertyValue = null)
+        public static void SetDeleteBehavior(DeleteBehavior deleteBehavior, bool softDelete = false, IReadOnlyDictionary<string, object> onSoftDeleteSetPropertyValue = null)
         {
             DeleteBehavior = deleteBehavior;
             SoftDelete = softDelete;
-            OnDeleteSetPropertyValue = onDeleteSetPropertyValue;
+            OnSoftDeleteSetPropertyValue = onSoftDeleteSetPropertyValue;
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
