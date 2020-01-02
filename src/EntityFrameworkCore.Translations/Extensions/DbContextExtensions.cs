@@ -155,15 +155,12 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
             foreach (var entry in state)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
-                var onDeleteSetPropertyValue = translationEntity.OnSoftDeleteSetPropertyValue?.Count > 0
-                    ? (IReadOnlyDictionary<string, object>)translationEntity.OnSoftDeleteSetPropertyValue
-                    : TranslationConfiguration.OnSoftDeleteSetPropertyValue;
 
                 if (translationEntity.SoftDelete && translationEntity.DeleteBehavior == DeleteBehavior.Cascade)
                 {
-                    if (onDeleteSetPropertyValue == null)
+                    if (translationEntity.OnSoftDeleteSetPropertyValue == null)
                     {
-                        throw new ArgumentNullException(nameof(onDeleteSetPropertyValue), "Soft delete requires configuration of the properties and the desired value to be set on delete." +
+                        throw new ArgumentNullException(nameof(translationEntity.OnSoftDeleteSetPropertyValue), "Soft delete requires configuration of the properties and the desired value to be set on delete." +
                             " Configure it for all entities using TranslationConfiguration.SetDeleteBehavior(DeleteBehavior.Cascade, true, new Dictionary<string, object> { ... })" +
                             " and/or per entity using entityTypeBuilder.TranslationDeleteBehavior(DeleteBehavior.Cascade, true, new Dictionary<string, object> { ... })");
                     }
@@ -171,13 +168,13 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     var schema = !string.IsNullOrWhiteSpace(translationEntity.Schema) ? $"[{translationEntity.Schema}]." : string.Empty;
 
                     query.Append($"UPDATE {schema}[{translationEntity.TableName}] SET ");
-                    query.Append(string.Join(", ", onDeleteSetPropertyValue.Select(key => $"[{key.Key}] = @{key.Key}{parameterPosition}")));
+                    query.Append(string.Join(", ", translationEntity.OnSoftDeleteSetPropertyValue.Select(key => $"[{key.Key}] = @{key.Key}{parameterPosition}")));
                     query.Append(" WHERE ");
                     query.Append(string.Join(" AND ", translationEntity.KeysFromSourceEntity
                         .Select(property => $"[{property.Value}] = @{property.Value}{parameterPosition}")));
                     query.Append(";");
 
-                    foreach (var property in onDeleteSetPropertyValue)
+                    foreach (var property in translationEntity.OnSoftDeleteSetPropertyValue)
                     {
                         command.AddParameterWithValue($"{property.Key}{parameterPosition}", property.Value);
                     }
@@ -188,6 +185,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                         command.AddParameterWithValue($"{parameter.Name}{ parameterPosition}", parameter.Value);
                     }
                 }
+
                 entry.State = EntityState.Unchanged;
                 parameterPosition++;
             }
