@@ -1,6 +1,9 @@
 ﻿using AdrianoAE.EntityFrameworkCore.Translations.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
+using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -12,21 +15,50 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
     {
         public static async Task<int> SaveChangesWithTranslationsAsync([NotNull] this DbContext context, CancellationToken cancellationToken = default, params object[] languageKey)
         {
-            int parameterPosition = 0;
+            bool hasActiveTransaction = context.Database.CurrentTransaction != null;
+            IDbContextTransaction transaction = context.Database.CurrentTransaction
+                ?? await context.Database.BeginTransactionAsync(TranslationConfiguration.IsolationLevel);
 
-            var addedEntries = context.ChangeTracker.Entries()
-                .Where(entry => entry.State == EntityState.Added
-                    && TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
-                .ToList();
-
-            var modifiedEntries = context.ChangeTracker.Entries()
-                .Where(entry => entry.State == EntityState.Modified
-                    && TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
-                .ToList();
+            var entries = context.ChangeTracker.Entries()
+                .Where(entry => TranslationConfiguration.TranslationEntities.ContainsKey(entry.Entity.GetType().FullName))
+                .ToLookup(entry => entry.State);
 
             var result = await context.SaveChangesAsync(cancellationToken);
 
-            foreach (var entry in addedEntries)
+            foreach (var state in entries)
+            {
+                switch (state.Key)
+                {
+                    case EntityState.Added:
+                        ConfigureAddedEntries(context, state, languageKey);
+                        break;
+                    case EntityState.Modified:
+                        ConfigureModifiedEntries(context, state, languageKey);
+                        break;
+                    case EntityState.Deleted:
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            result += await context.SaveChangesAsync(cancellationToken);
+
+            if (!hasActiveTransaction)
+            {
+                await CommitTransactionAsync(transaction);
+            }
+
+            return result;
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static void ConfigureAddedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, object[] languageKey)
+        {
+            int parameterPosition = 0;
+
+            foreach (var entry in state)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
 
@@ -53,8 +85,15 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
                 context.Entry(translation).State = EntityState.Added;
             }
+        }
 
-            foreach (var entry in modifiedEntries)
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static void ConfigureModifiedEntries(DbContext context, IGrouping<EntityState, EntityEntry> state, object[] languageKey)
+        {
+            int parameterPosition = 0;
+
+            foreach (var entry in state)
             {
                 var translationEntity = TranslationConfiguration.TranslationEntities[entry.Entity.GetType().FullName];
 
@@ -100,8 +139,45 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                     }
                 }
             }
+        }
 
-            return result += await context.SaveChangesAsync(cancellationToken);
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static async Task CommitTransactionAsync(IDbContextTransaction transaction)
+        {
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
+
+            try
+            {
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                RollbackTransaction(transaction);
+                throw;
+            }
+            finally
+            {
+                transaction.Dispose();
+            }
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        private static void RollbackTransaction(IDbContextTransaction transaction)
+        {
+            try
+            {
+                transaction?.Rollback();
+            }
+            finally
+            {
+                if (transaction != null)
+                {
+                    transaction.Dispose();
+                    transaction = null;
+                }
+            }
         }
     }
 }
