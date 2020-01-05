@@ -6,7 +6,7 @@
 
 | [![NuGet][main-nuget-badge]][main-nuget] | Extensions to Entity Framework Core to help with Domain localization |
 |--|--|
-|  <img src="https://svgur.com/i/H6y.svg" width="300px"/> | Designed with Domain Driven Design and Clean Architecture in mind to allow a clean domain that does not know anything about the translations, leaving all the implementation to the Persistence and Application layer if not using repositories. |
+|  <img src="https://svgur.com/i/H6y.svg" width="300px"/> | Designed with Domain Driven Design and Clean Architecture in mind to allow a clean domain that does not know anything about the translations, leaving all the implementation to the Persistence and Application layer. |
 
 ## Prerequisites
 
