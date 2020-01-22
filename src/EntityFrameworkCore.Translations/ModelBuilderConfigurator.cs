@@ -33,7 +33,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                 {
                     var propertiesWithTranslation = entity.GetProperties()
                         .Where(efproperty => translationEntity.Type.GetProperties()
-                            .Where(property => property.PropertyType == typeof(string))
+                            .Where(property => property.PropertyType == typeof(string) && entity.ClrType.GetProperty(property.Name) != null)
                             .Select(p => p.Name)
                             .Contains(efproperty.Name))
                         .ToList();
@@ -105,8 +105,8 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
             configuration.TableName = table;
             configuration.SoftDelete = (bool)(entity.FindAnnotation(TranslationAnnotationNames.SoftDelete)?.Value ?? TranslationConfiguration.SoftDelete);
             configuration.DeleteBehavior = (DeleteBehavior)(entity.FindAnnotation(TranslationAnnotationNames.DeleteBehavior)?.Value ?? TranslationConfiguration.DeleteBehavior);
-            configuration.OnSoftDeleteSetPropertyValue = (IDictionary<string, object>)entity.FindAnnotation(TranslationAnnotationNames.OnSoftDeleteSetPropertyValue)?.Value 
-                ?? (IDictionary<string, object>)TranslationConfiguration.OnSoftDeleteSetPropertyValue;
+            configuration.OnSoftDeleteSetPropertyValue = (Dictionary<string, object>)entity.FindAnnotation(TranslationAnnotationNames.OnSoftDeleteSetPropertyValue)?.Value 
+                ?? (Dictionary<string, object>)TranslationConfiguration.OnSoftDeleteSetPropertyValue;
 
             modelBuilder.Entity<TType>(translationConfiguration =>
             {

@@ -15,7 +15,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
         //─────────────────────────────────────────────────────────────────────────────────────────
 
         private static Dictionary<string, TranslationEntity> _translationEntities;
-        internal static IReadOnlyDictionary<string, TranslationEntity> TranslationEntities => _translationEntities;
+        public static IReadOnlyDictionary<string, TranslationEntity> TranslationEntities => _translationEntities;
         internal static IReadOnlyDictionary<string, object> OnSoftDeleteSetPropertyValue { get; private set; }
 
         //─────────────────────────────────────────────────────────────────────────────────────────

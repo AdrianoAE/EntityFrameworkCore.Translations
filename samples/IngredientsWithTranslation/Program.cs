@@ -4,8 +4,10 @@ using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
 using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,7 +72,7 @@ namespace IngredientsWithTranslation
 
         public class IngredientTranslationEntityConfiguration : AuditableEntityTypeConfiguration<IngredientTranslation>
         {
-            public override void Configure(EntityTypeBuilder<IngredientTranslation> categoryConfiguration) 
+            public override void Configure(EntityTypeBuilder<IngredientTranslation> categoryConfiguration)
                 => base.Configure(categoryConfiguration);
         }
         #endregion
@@ -246,6 +248,120 @@ namespace IngredientsWithTranslation
 
             Console.WriteLine($"(Query) Final Values:");
             await PrintAll(context);
+
+
+            var translationEntity = TranslationConfiguration.TranslationEntities[typeof(Ingredient).FullName];
+
+            var selectedIngredient = await context.Ingredients
+                .FirstOrDefaultAsync(ingredient => ingredient.Id == 3);
+            var selectedIngredientTranslations = await context.IngredientsTranslations
+                //The predicate must be built at runtime with KeysFromSource
+                .Where(translation => EF.Property<int>(translation, "IngredientId") == 3)
+                .ToListAsync();
+
+            IDictionary<string, object> selectedIngredientMapping = new ExpandoObject();
+
+            foreach (var property in typeof(Ingredient).GetProperties())
+            {
+                if (typeof(IngredientTranslation).GetProperty(property.Name) != null)
+                {
+                    var translations = new Dictionary<object, object>();
+
+                    foreach (var translation in selectedIngredientTranslations)
+                    {
+                        var languageKey = new Dictionary<string, object>();
+
+                        foreach (var languageProperty in typeof(IngredientTranslation)
+                            .GetProperties()
+                            .Where(languageProperty => translationEntity.KeysFromLanguage
+                                .Select(key => key.Name)
+                                .Contains(languageProperty.Name)))
+                        {
+                            languageKey.Add(languageProperty.Name, languageProperty.GetValue(translation));
+                        }
+
+                        if (languageKey.Count == 1)
+                        {
+                            translations.Add(languageKey.First().Value, translation.Name);
+                        }
+                        else
+                        {
+                            translations.Add(languageKey, translation.Name);
+                        }
+                    }
+
+                    selectedIngredientMapping.Add($"{property.Name}Translations", translations);
+                }
+                else
+                {
+                    selectedIngredientMapping.Add(property.Name, property.GetValue(selectedIngredient));
+                }
+            }
+
+            //-----------------------------------------------
+
+            var ingredients = await context.Ingredients
+                .Where(ingredient => ingredient.Id == 2 || ingredient.Id == 4)
+                .ToListAsync();
+            var ingredientsTranslations = await context.IngredientsTranslations
+                //The predicate must be built at runtime with KeysFromSource
+                .Where(translation => ingredients
+                    .Select(ingredient => ingredient.Id)
+                    .Contains(EF.Property<int>(translation, "IngredientId")))
+                .ToListAsync();
+
+            var translatedIngredients = new List<dynamic>();
+
+            foreach (var ingredient in ingredients)
+            {
+                IDictionary<string, object> ingredientMapping = new ExpandoObject();
+
+                foreach (var property in typeof(Ingredient).GetProperties())
+                {
+                    if (typeof(IngredientTranslation).GetProperty(property.Name) != null)
+                    {
+                        var translations = new Dictionary<object, object>();
+
+                        foreach (var translation in ingredientsTranslations
+                            //The predicate must be built at runtime with KeysFromSource
+                            .Where(translation => context.Entry(translation).Property<int>("IngredientId").CurrentValue == ingredient.Id))
+                        {
+                            var languageKey = new Dictionary<string, object>();
+
+                            foreach (var languageProperty in typeof(IngredientTranslation)
+                                .GetProperties()
+                                .Where(p => translationEntity.KeysFromLanguage
+                                    .Select(x => x.Name)
+                                    .Contains(p.Name)))
+                            {
+                                languageKey.Add(languageProperty.Name, context.Entry(languageProperty).Property<object>(languageProperty.Name).CurrentValue);
+                            }
+
+                            if (languageKey.Count == 1)
+                            {
+                                translations.Add(languageKey.First().Value, translation.Name);
+                            }
+                            else
+                            {
+                                translations.Add(languageKey, translation.Name);
+                            }
+                        }
+
+                        ingredientMapping.Add($"{property.Name}Translations", translations);
+                    }
+                    else
+                    {
+                        ingredientMapping.Add(property.Name, property.GetValue(ingredient));
+                    }
+                }
+
+                translatedIngredients.Add(ingredientMapping);
+            }
+
+            //----------------------
+
+            var selectedIngredientMappingSerialized = JsonConvert.SerializeObject(selectedIngredientMapping);
+            var translatedIngredientsSerialized = JsonConvert.SerializeObject(translatedIngredients);
         }
 
         private static async Task PrintAll(IngredientContext context)
