@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations.Interfaces
 {
-    public interface IIQueryableExtensions<TEntity>
+    public interface IIQueryableTranslationExtensions<TEntity>
         where TEntity : class
     {
         Task<TEntity> FirstAsync(CancellationToken cancellationToken = default);

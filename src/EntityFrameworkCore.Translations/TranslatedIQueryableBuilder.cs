@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {
@@ -59,6 +62,82 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                     (From, Translation) => From.Base.Entity.SetTranslatedProperties(Translation ?? From.Base.Translation));
 
             return wanted;
+        }
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        internal static async Task<List<dynamic>> GetAllTranslationsQuery<TEntity>(this IQueryable<TEntity> query, CancellationToken cancellationToken = default)
+            where TEntity : class
+        {
+            var context = PersistenceHelpers.GetDbContext(query);
+            var translationEntity = TranslationConfiguration.TranslationEntities[typeof(TEntity).FullName];
+
+            var ingredients = await query.ToListAsync(cancellationToken);
+
+            var sourceKeys = translationEntity.KeysFromSourceEntity.Select(key => key.Key);
+            var relationshipKeys = translationEntity.KeysFromSourceEntity.Select(key => key.Value);
+                        
+            var ingredientsTranslations = await query
+                .Join(
+                    context.GetType().GetMethod("Query").MakeGenericMethod(translationEntity.Type).Invoke(context, null) as IQueryable<object>,
+                    GetKeys<TEntity>(sourceKeys),
+                    GetKeys<object>(relationshipKeys),
+                    (Entity, Translation) => Translation)
+                .ToListAsync(cancellationToken);
+
+            var translatedIngredients = new List<dynamic>();
+
+            foreach (var ingredient in ingredients)
+            {
+                IDictionary<string, object> ingredientMapping = new ExpandoObject();
+
+                foreach (var property in typeof(TEntity).GetProperties())
+                {
+                    if (translationEntity.Type.GetProperty(property.Name) != null)
+                    {
+                        var translations = new Dictionary<object, object>();
+
+                        var currentIngredientTranslations = ingredientsTranslations.AsQueryable();
+                        foreach (var keyFromSource in translationEntity.KeysFromSourceEntity)
+                        {
+                            currentIngredientTranslations = currentIngredientTranslations
+                                .Where(translation => context
+                                    .Entry(translation)
+                                    .Property(keyFromSource.Value).CurrentValue
+                                    .Equals(ingredient.GetType().GetProperty(keyFromSource.Key).GetValue(ingredient)));
+                        }
+
+                        foreach (var translation in currentIngredientTranslations)
+                        {
+                            var languageKey = new Dictionary<string, object>();
+
+                            foreach (var languageProperty in translationEntity.KeysFromLanguageEntity)
+                            {
+                                languageKey.Add(languageProperty.Name, context.Entry(translation).Property(languageProperty.Name).CurrentValue);
+                            }
+
+                            if (languageKey.Count == 1)
+                            {
+                                translations.Add(languageKey.First().Value, translation.GetType().GetProperty(property.Name).GetValue(translation));
+                            }
+                            else
+                            {
+                                translations.Add(languageKey, translation.GetType().GetProperty(property.Name).GetValue(translation));
+                            }
+                        }
+
+                        ingredientMapping.Add($"{property.Name}Translations", translations);
+                    }
+                    else
+                    {
+                        ingredientMapping.Add(property.Name, property.GetValue(ingredient));
+                    }
+                }
+
+                translatedIngredients.Add(ingredientMapping);
+            }
+            
+            return translatedIngredients;
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
