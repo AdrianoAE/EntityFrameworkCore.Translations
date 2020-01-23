@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,11 +32,18 @@ namespace IngredientsWithTranslation
         {
             public int Id { get; internal set; } //internal set for DataSeeding
             public string Name { get; private set; }
+            public string Description { get; private set; }
 
             private Ingredient() { } //Required by EF
 
             public Ingredient(string name)
                 => SetName(name);
+
+            public Ingredient(string name, string description)
+                : this(name)
+            {
+                Description = description;
+            }
 
             public void SetName(string name)
                 => Name = name;
@@ -48,6 +54,7 @@ namespace IngredientsWithTranslation
         public class IngredientTranslation : ITranslation<Ingredient>
         {
             public string Name { get; set; }
+            public string Description { get; set; }
         }
 
         #region --- Soft Delete Shadow Property Configurations
@@ -202,10 +209,10 @@ namespace IngredientsWithTranslation
             }
             #endregion
 
-            var appleEnglish = new Ingredient("Apple");
-            var applePortuguese = new Ingredient("Maçã");
+            var appleEnglish = new Ingredient("Apple", "DescEN");
+            var applePortuguese = new Ingredient("Maçã", "DescPT");
             var appleGerman = new Ingredient("Apfel");
-            var appleFrench = new Ingredient("Pomme");
+            var appleFrench = new Ingredient("Pomme", "DescFR");
 
             //Here to showcase, always use the Range one for multiple
             context.Ingredients.UpsertTranslation(apple, appleEnglish, English); //Update
@@ -230,7 +237,7 @@ namespace IngredientsWithTranslation
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 
             #region --- Soft Delete enabled for translation tables
-            Console.WriteLine($"Potato soft deleted.");
+            Console.WriteLine($"Potato soft deleted:");
 
             var ingredientToDelete = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 1);
             context.Ingredients.Remove(ingredientToDelete);
@@ -246,122 +253,20 @@ namespace IngredientsWithTranslation
 
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 
+            #region --- Query with all translations
+            Console.WriteLine($"Query with all translations:");
+
+            var translatedIngredient = await context.Ingredients
+                .WithAllTranslations()
+                .FirstOrDefaultAsync(ingredient => ingredient.Id == 3);
+
+            Console.WriteLine(JsonConvert.SerializeObject(translatedIngredient, Formatting.Indented));
+            #endregion
+
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
             Console.WriteLine($"(Query) Final Values:");
             await PrintAll(context);
-
-
-            var translationEntity = TranslationConfiguration.TranslationEntities[typeof(Ingredient).FullName];
-
-            var selectedIngredient = await context.Ingredients
-                .FirstOrDefaultAsync(ingredient => ingredient.Id == 3);
-            var selectedIngredientTranslations = await context.IngredientsTranslations
-                //The predicate must be built at runtime with KeysFromSource
-                .Where(translation => EF.Property<int>(translation, "IngredientId") == 3)
-                .ToListAsync();
-
-            IDictionary<string, object> selectedIngredientMapping = new ExpandoObject();
-
-            foreach (var property in typeof(Ingredient).GetProperties())
-            {
-                if (typeof(IngredientTranslation).GetProperty(property.Name) != null)
-                {
-                    var translations = new Dictionary<object, object>();
-
-                    foreach (var translation in selectedIngredientTranslations)
-                    {
-                        var languageKey = new Dictionary<string, object>();
-
-                        foreach (var languageProperty in typeof(IngredientTranslation)
-                            .GetProperties()
-                            .Where(languageProperty => translationEntity.KeysFromLanguage
-                                .Select(key => key.Name)
-                                .Contains(languageProperty.Name)))
-                        {
-                            languageKey.Add(languageProperty.Name, languageProperty.GetValue(translation));
-                        }
-
-                        if (languageKey.Count == 1)
-                        {
-                            translations.Add(languageKey.First().Value, translation.Name);
-                        }
-                        else
-                        {
-                            translations.Add(languageKey, translation.Name);
-                        }
-                    }
-
-                    selectedIngredientMapping.Add($"{property.Name}Translations", translations);
-                }
-                else
-                {
-                    selectedIngredientMapping.Add(property.Name, property.GetValue(selectedIngredient));
-                }
-            }
-
-            //-----------------------------------------------
-
-            var ingredients = await context.Ingredients
-                .Where(ingredient => ingredient.Id == 2 || ingredient.Id == 4)
-                .ToListAsync();
-            var ingredientsTranslations = await context.IngredientsTranslations
-                //The predicate must be built at runtime with KeysFromSource
-                .Where(translation => ingredients
-                    .Select(ingredient => ingredient.Id)
-                    .Contains(EF.Property<int>(translation, "IngredientId")))
-                .ToListAsync();
-
-            var translatedIngredients = new List<dynamic>();
-
-            foreach (var ingredient in ingredients)
-            {
-                IDictionary<string, object> ingredientMapping = new ExpandoObject();
-
-                foreach (var property in typeof(Ingredient).GetProperties())
-                {
-                    if (typeof(IngredientTranslation).GetProperty(property.Name) != null)
-                    {
-                        var translations = new Dictionary<object, object>();
-
-                        foreach (var translation in ingredientsTranslations
-                            //The predicate must be built at runtime with KeysFromSource
-                            .Where(translation => context.Entry(translation).Property<int>("IngredientId").CurrentValue == ingredient.Id))
-                        {
-                            var languageKey = new Dictionary<string, object>();
-
-                            foreach (var languageProperty in typeof(IngredientTranslation)
-                                .GetProperties()
-                                .Where(p => translationEntity.KeysFromLanguage
-                                    .Select(x => x.Name)
-                                    .Contains(p.Name)))
-                            {
-                                languageKey.Add(languageProperty.Name, context.Entry(languageProperty).Property<object>(languageProperty.Name).CurrentValue);
-                            }
-
-                            if (languageKey.Count == 1)
-                            {
-                                translations.Add(languageKey.First().Value, translation.Name);
-                            }
-                            else
-                            {
-                                translations.Add(languageKey, translation.Name);
-                            }
-                        }
-
-                        ingredientMapping.Add($"{property.Name}Translations", translations);
-                    }
-                    else
-                    {
-                        ingredientMapping.Add(property.Name, property.GetValue(ingredient));
-                    }
-                }
-
-                translatedIngredients.Add(ingredientMapping);
-            }
-
-            //----------------------
-
-            var selectedIngredientMappingSerialized = JsonConvert.SerializeObject(selectedIngredientMapping);
-            var translatedIngredientsSerialized = JsonConvert.SerializeObject(translatedIngredients);
         }
 
         private static async Task PrintAll(IngredientContext context)
