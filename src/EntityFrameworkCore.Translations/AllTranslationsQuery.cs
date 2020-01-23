@@ -1,5 +1,4 @@
 ﻿using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,102 +9,91 @@ using System.Threading.Tasks;
 
 namespace AdrianoAE.EntityFrameworkCore.Translations
 {
-    public sealed class TranslationQuery<TEntity> : IIQueryableTranslationExtensions<TEntity>, ITranslationQueryInitialized<TEntity>
+    public sealed class AllTranslationsQuery<TEntity> : IIQueryableAllTranslationsExtensions<TEntity>
         where TEntity : class
     {
         private IQueryable<TEntity> _query;
-        private object[] _desiredParameters;
-        private object[] _defaultParameters;
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        private TranslationQuery(IQueryable<TEntity> query, params object[] languageKey)
+        private AllTranslationsQuery(IQueryable<TEntity> query)
         {
             _query = query;
-            _desiredParameters = languageKey;
         }
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        internal static ITranslationQueryInitialized<TEntity> Initialize(IQueryable<TEntity> query, params object[] languageKey)
-            => new TranslationQuery<TEntity>(query, languageKey);
+        internal static IIQueryableAllTranslationsExtensions<TEntity> Initialize(IQueryable<TEntity> query)
+            => new AllTranslationsQuery<TEntity>(query);
 
         //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 
-        public IIQueryableTranslationExtensions<TEntity> WithFallback(params object[] parameters)
-        {
-            _defaultParameters = parameters;
-            return this;
-        }
-
-        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-
-        public Task<TEntity> FirstAsync(CancellationToken cancellationToken = default)
-          => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).FirstAsync(cancellationToken);
+        public async Task<dynamic> FirstAsync(CancellationToken cancellationToken = default)
+          => (await _query.GetAllTranslationsQuery(cancellationToken)).First();
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<TEntity> FirstAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters, predicate).FirstAsync(cancellationToken);
+        public async Task<dynamic> FirstAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+            => (await _query.Where(predicate).GetAllTranslationsQuery(cancellationToken)).First();
 
         //═════════════════════════════════════════════════════════════════════════════════════════
 
-        public Task<TEntity> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).FirstOrDefaultAsync(cancellationToken);
+        public async Task<dynamic> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).FirstOrDefault();
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<TEntity> FirstOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters, predicate).FirstOrDefaultAsync(cancellationToken);
+        public async Task<dynamic> FirstOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+            => (await _query.Where(predicate).GetAllTranslationsQuery(cancellationToken)).FirstOrDefault();
 
         //═════════════════════════════════════════════════════════════════════════════════════════
 
-        public Task<TEntity> SingleAsync(CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleAsync(cancellationToken);
+        public async Task<dynamic> SingleAsync(CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).Single();
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<TEntity> SingleAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters, predicate).SingleAsync(cancellationToken);
+        public async Task<dynamic> SingleAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+            => (await _query.Where(predicate).GetAllTranslationsQuery(cancellationToken)).Single();
 
         //═════════════════════════════════════════════════════════════════════════════════════════
 
-        public Task<TEntity> SingleOrDefaultAsync(CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).SingleOrDefaultAsync(cancellationToken);
+        public async Task<dynamic> SingleOrDefaultAsync(CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).SingleOrDefault();
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<TEntity> SingleOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters, predicate).SingleOrDefaultAsync(cancellationToken);
+        public async Task<dynamic> SingleOrDefaultAsync([NotNull] Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+            => (await _query.Where(predicate).GetAllTranslationsQuery(cancellationToken)).SingleOrDefault();
 
         //═════════════════════════════════════════════════════════════════════════════════════════
 
-        public Task<TEntity[]> ToArrayAsync(CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToArrayAsync(cancellationToken);
+        public async Task<dynamic[]> ToArrayAsync(CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).ToArray();
 
         //═════════════════════════════════════════════════════════════════════════════════════════
 
-        public Task<Dictionary<TKey, TEntity>> ToDictionaryAsync<TKey>([NotNull] Func<TEntity, TKey> keySelector, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToDictionaryAsync(keySelector, cancellationToken);
+        public async Task<Dictionary<TKey, dynamic>> ToDictionaryAsync<TKey>([NotNull] Func<dynamic, TKey> keySelector, CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).ToDictionary(keySelector);
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<Dictionary<TKey, TEntity>> ToDictionaryAsync<TKey>([NotNull] Func<TEntity, TKey> keySelector, [NotNull] IEqualityComparer<TKey> comparer, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToDictionaryAsync(keySelector, comparer, cancellationToken);
+        public async Task<Dictionary<TKey, dynamic>> ToDictionaryAsync<TKey>([NotNull] Func<dynamic, TKey> keySelector, [NotNull] IEqualityComparer<TKey> comparer, CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).ToDictionary(keySelector, comparer);
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<Dictionary<TKey, TElement>> ToDictionaryAsync<TKey, TElement>([NotNull] Func<TEntity, TKey> keySelector, [NotNull] Func<TEntity, TElement> elementSelector, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToDictionaryAsync(keySelector, elementSelector, cancellationToken);
+        public async Task<Dictionary<TKey, TElement>> ToDictionaryAsync<TKey, TElement>([NotNull] Func<dynamic, TKey> keySelector, [NotNull] Func<dynamic, TElement> elementSelector, CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).ToDictionary(keySelector, elementSelector);
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<Dictionary<TKey, TElement>> ToDictionaryAsync<TKey, TElement>([NotNull] Func<TEntity, TKey> keySelector, [NotNull] Func<TEntity, TElement> elementSelector, [NotNull] IEqualityComparer<TKey> comparer, CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToDictionaryAsync(keySelector, elementSelector, comparer, cancellationToken);
+        public async Task<Dictionary<TKey, TElement>> ToDictionaryAsync<TKey, TElement>([NotNull] Func<dynamic, TKey> keySelector, [NotNull] Func<dynamic, TElement> elementSelector, [NotNull] IEqualityComparer<TKey> comparer, CancellationToken cancellationToken = default)
+            => (await _query.GetAllTranslationsQuery(cancellationToken)).ToDictionary(keySelector, elementSelector, comparer);
 
         //─────────────────────────────────────────────────────────────────────────────────────────
 
-        public Task<List<TEntity>> ToListAsync(CancellationToken cancellationToken = default)
-            => _query.GetTranslatedQuery(_desiredParameters, _defaultParameters).ToListAsync(cancellationToken);
+        public async Task<List<dynamic>> ToListAsync(CancellationToken cancellationToken = default)
+            => await _query.GetAllTranslationsQuery(cancellationToken);
     }
 }

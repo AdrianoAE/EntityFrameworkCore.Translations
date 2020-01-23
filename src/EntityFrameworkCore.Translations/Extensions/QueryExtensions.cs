@@ -9,5 +9,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
         public static ITranslationQueryInitialized<TEntity> WithLanguage<TEntity>([NotNull] this IQueryable<TEntity> source, params object[] languageKey)
             where TEntity : class
             => TranslationQuery<TEntity>.Initialize(source, languageKey);
+
+        //■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+        public static IIQueryableAllTranslationsExtensions<TEntity> WithAllTranslations<TEntity>([NotNull] this IQueryable<TEntity> source)
+            where TEntity : class
+            => AllTranslationsQuery<TEntity>.Initialize(source);
     }
 }
