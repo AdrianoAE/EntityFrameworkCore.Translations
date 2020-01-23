@@ -1,12 +1,15 @@
 ﻿<Project>
   <PropertyGroup>
     <PackageReleaseNotes>
+Changes in 0.3.0-alpha:
+* Support for querying with all translations
+      
 Changes in 0.2.2-alpha:
 * Fixed soft delete to only modify the entity state and update database if necessary
-      
+
 Changes in 0.2.1-alpha:
 * Updated soft delete to only query database once
-      
+
 Changes in 0.2.0-alpha:
 * Support for soft delete (Cascade)
 

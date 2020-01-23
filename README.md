@@ -1,12 +1,15 @@
-[![NuGet][main-nuget-badge]][main-nuget]
 
 [main-nuget]: https://www.nuget.org/packages/AdrianoAE.EntityFrameworkCore.Translations/
 [main-nuget-badge]: https://img.shields.io/nuget/v/AdrianoAE.EntityFrameworkCore.Translations?style=flat-square&label=nuget
 
-# Experimental Project
+# EntityFrameworkCore.Translations
 
-The purpose of this project is to improve the way we deal with domain translations. Most of the times we need our product to have localization, but it's not a responsibility of our Domain to know about it, since it's a UI concern for the end user.
+| [![NuGet][main-nuget-badge]][main-nuget] | Extensions to Entity Framework Core to help with Domain localization |
+|--|--|
+|  <img src="https://svgur.com/i/H6y.svg" width="300px"/> | Designed with Domain Driven Design and Clean Architecture in mind to allow a clean domain that does not know anything about the translations, leaving all the implementation to the Persistence and Application layer. |
 
-The project is in development and have a lot of problems that need to be solved.
+## Prerequisites
 
-//A simple sample will be released soon. And then will work on showing all other configurations that can be done at the current stage of the project.
+Required tools:
+* [Visual Studio Code or Visual Studio 2019](https://visualstudio.microsoft.com/vs/) (version 16.3 or later)
+* [.NET Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1)
