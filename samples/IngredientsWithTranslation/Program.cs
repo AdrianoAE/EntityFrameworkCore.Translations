@@ -4,6 +4,7 @@ using AdrianoAE.EntityFrameworkCore.Translations.Interfaces;
 using AdrianoAE.EntityFrameworkCore.Translations.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,11 +32,18 @@ namespace IngredientsWithTranslation
         {
             public int Id { get; internal set; } //internal set for DataSeeding
             public string Name { get; private set; }
+            public string Description { get; private set; }
 
             private Ingredient() { } //Required by EF
 
             public Ingredient(string name)
                 => SetName(name);
+
+            public Ingredient(string name, string description)
+                : this(name)
+            {
+                Description = description;
+            }
 
             public void SetName(string name)
                 => Name = name;
@@ -46,6 +54,7 @@ namespace IngredientsWithTranslation
         public class IngredientTranslation : ITranslation<Ingredient>
         {
             public string Name { get; set; }
+            public string Description { get; set; }
         }
 
         #region --- Soft Delete Shadow Property Configurations
@@ -70,7 +79,7 @@ namespace IngredientsWithTranslation
 
         public class IngredientTranslationEntityConfiguration : AuditableEntityTypeConfiguration<IngredientTranslation>
         {
-            public override void Configure(EntityTypeBuilder<IngredientTranslation> categoryConfiguration) 
+            public override void Configure(EntityTypeBuilder<IngredientTranslation> categoryConfiguration)
                 => base.Configure(categoryConfiguration);
         }
         #endregion
@@ -200,10 +209,10 @@ namespace IngredientsWithTranslation
             }
             #endregion
 
-            var appleEnglish = new Ingredient("Apple");
-            var applePortuguese = new Ingredient("Maçã");
+            var appleEnglish = new Ingredient("Apple", "DescEN");
+            var applePortuguese = new Ingredient("Maçã", "DescPT");
             var appleGerman = new Ingredient("Apfel");
-            var appleFrench = new Ingredient("Pomme");
+            var appleFrench = new Ingredient("Pomme", "DescFR");
 
             //Here to showcase, always use the Range one for multiple
             context.Ingredients.UpsertTranslation(apple, appleEnglish, English); //Update
@@ -228,7 +237,7 @@ namespace IngredientsWithTranslation
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
 
             #region --- Soft Delete enabled for translation tables
-            Console.WriteLine($"Potato soft deleted.");
+            Console.WriteLine($"Potato soft deleted:");
 
             var ingredientToDelete = await context.Ingredients.FirstOrDefaultAsync(i => i.Id == 1);
             context.Ingredients.Remove(ingredientToDelete);
@@ -240,6 +249,18 @@ namespace IngredientsWithTranslation
                 Console.WriteLine($"\tProperty '{property.Key}' set to '{property.Value}'");
             }
             #endregion
+            #endregion
+
+            Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
+
+            #region --- Query with all translations
+            Console.WriteLine($"Query with all translations:");
+
+            var translatedIngredient = await context.Ingredients
+                .WithAllTranslations()
+                .FirstOrDefaultAsync(ingredient => ingredient.Id == 3);
+
+            Console.WriteLine(JsonConvert.SerializeObject(translatedIngredient, Formatting.Indented));
             #endregion
 
             Console.WriteLine("\n■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n");
