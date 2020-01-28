@@ -70,8 +70,12 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
                 var tracked = trackedEntity.SingleOrDefault();
                 if (tracked != null)
                 {
-                    tracked.CurrentValues.SetValues(context.Entry(translation).CurrentValues);
-                    context.Entry(tracked.Entity).State = EntityState.Modified;
+                    foreach (var property in tracked.Entity.GetType().GetProperties()
+                        .Where(property => !translationEntity.KeysFromLanguageEntity.Select(key => key.Name).Contains(property.Name)
+                           || !translationEntity.KeysFromSourceEntity.Select(key => key.Value).Contains(property.Name)))
+                    {
+                        tracked.Property(property.Name).CurrentValue = context.Entry(translation).Property(property.Name).CurrentValue;
+                    }
                 }
                 else
                 {
@@ -79,10 +83,10 @@ namespace AdrianoAE.EntityFrameworkCore.Translations.Extensions
 
                     var existingTranslation = existingTranslations.AsQueryable();
                     foreach (var property in context.Entry(translation).Properties
-                        .Where(p => translationEntity.KeysFromLanguageEntity.Select(x => x.Name).Contains(p.Metadata.Name)
-                            || translationEntity.KeysFromSourceEntity.Select(x => x.Value).Contains(p.Metadata.Name)))
+                        .Where(property => translationEntity.KeysFromLanguageEntity.Select(key => key.Name).Contains(property.Metadata.Name)
+                            || translationEntity.KeysFromSourceEntity.Select(key => key.Value).Contains(property.Metadata.Name)))
                     {
-                        existingTranslation = existingTranslation.Where(p => p[property.Metadata.Name].Equals(property.CurrentValue));
+                        existingTranslation = existingTranslation.Where(translation => translation[property.Metadata.Name].Equals(property.CurrentValue));
                     }
 
                     if (existingTranslation.Count() > 0)

@@ -95,7 +95,7 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
                 {
                     if (translationEntity.Type.GetProperty(property.Name) != null)
                     {
-                        var translations = new Dictionary<object, object>();
+                        var translations = new Dictionary<object, string>();
 
                         var currentIngredientTranslations = ingredientsTranslations.AsQueryable();
                         foreach (var keyFromSource in translationEntity.KeysFromSourceEntity)
@@ -118,11 +118,11 @@ namespace AdrianoAE.EntityFrameworkCore.Translations
 
                             if (languageKey.Count == 1)
                             {
-                                translations.Add(languageKey.First().Value, translation.GetType().GetProperty(property.Name).GetValue(translation));
+                                translations.Add(languageKey.First().Value, translation.GetType().GetProperty(property.Name).GetValue(translation) as string);
                             }
                             else
                             {
-                                translations.Add(languageKey, translation.GetType().GetProperty(property.Name).GetValue(translation));
+                                translations.Add(languageKey, translation.GetType().GetProperty(property.Name).GetValue(translation) as string);
                             }
                         }
 
