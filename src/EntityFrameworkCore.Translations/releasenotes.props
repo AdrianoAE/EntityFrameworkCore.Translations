@@ -1,9 +1,12 @@
 ﻿<Project>
   <PropertyGroup>
     <PackageReleaseNotes>
+Changes in 0.3.1-alpha:
+* Fix issue with UpsertTranslations that was overriding shadow properties to default values
+      
 Changes in 0.3.0-alpha:
 * Support for querying with all translations
-      
+
 Changes in 0.2.2-alpha:
 * Fixed soft delete to only modify the entity state and update database if necessary
 
